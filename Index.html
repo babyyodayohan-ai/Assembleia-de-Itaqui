@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assembleia de Jesus - Itaqui</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .dark .glass {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(229, 231, 235, 0.5);
+        }
+        .dark .glass-card {
+            background: rgba(31, 41, 55, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, query, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // Global Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTDM1w_Bl2uJhcsVQXyUivAR4vQWq1DZ4",
+            authDomain: "igrejadeitaqui.firebaseapp.com",
+            projectId: "igrejadeitaqui",
+            storageBucket: "igrejadeitaqui.firebasestorage.app",
+            messagingSenderId: "694873463575",
+            appId: "1:694873463575:web:09518c36cfab2ac318b552"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'assembleia-itaqui-default';
+
+        window.fb = { auth, db, storage, appId, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, query, onSnapshot, serverTimestamp, ref, uploadBytes, getDownloadURL };
+        
+        // Disparar evento de que o Firebase carregou
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-50 glass shadow-sm transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('inicio')">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-md text-xl font-bold">
+                    <i class="fa-solid fa-church"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide">Assembleia de Jesus</h1>
+                    <p class="text-xs text-brand-600 dark:text-indigo-400 font-semibold tracking-wider">ITAQUI</p>
+                </div>
+            </div>
+
+            <!-- Navegação Desktop -->
+            <nav class="hidden md:flex items-center space-x-1 lg:space-x-3">
+                <button onclick="switchTab('inicio')" class="nav-btn px-3 py-2 rounded-lg font-medium text-sm transition hover:bg-brand-500/10 active-tab" data-target="inicio">Início</button>
+                <button onclick="switchTab('avisos')" class="nav-btn px-3 py-2 rounded-lg font-medium text-sm transition hover:bg-brand-500/10" data-target="avisos">Avisos</button>
+                <button onclick="switchTab('cultos')" class="nav-btn px-3 py-2 rounded-lg font-medium text-sm transition hover:bg-brand-500/10" data-target="cultos">Cultos & Agenda</button>
+                <button onclick="switchTab('chat')" class="nav-btn px-3 py-2 rounded-lg font-medium text-sm transition hover:bg-brand-500/10 flex items-center gap-1.5" data-target="chat"><i class="fa-solid fa-comments"></i> Chat</button>
+                <button onclick="switchTab('galeria')" class="nav-btn px-3 py-2 rounded-lg font-medium text-sm transition hover:bg-brand-500/10" data-target="galeria">Galeria</button>
+                <button onclick="switchTab('oracao')" class="nav-btn px-3 py-2 rounded-lg font-medium text-sm transition hover:bg-brand-500/10" data-target="oracao">Orações</button>
+                <button onclick="switchTab('contato')" class="nav-btn px-3 py-2 rounded-lg font-medium text-sm transition hover:bg-brand-500/10" data-target="contato">Contato</button>
+                <button id="admin-nav-btn" onclick="switchTab('admin')" class="nav-btn hidden px-3 py-2 rounded-lg font-medium text-sm text-amber-600 dark:text-amber-400 transition hover:bg-amber-500/10"><i class="fa-solid fa-shield-halved"></i> Painel</button>
+            </nav>
+
+            <!-- Ações Direita (Tema & Usuário) -->
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleDarkMode()" class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300" title="Alternar Tema">
+                    <i class="fa-solid fa-sun dark:hidden"></i>
+                    <i class="fa-solid fa-moon hidden dark:block"></i>
+                </button>
+
+                <div id="user-auth-area">
+                    <button onclick="openAuthModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-md transition flex items-center gap-2">
+                        <i class="fa-solid fa-user"></i> Entrar
+                    </button>
+                </div>
+
+                <!-- Botão Menu Mobile -->
+                <button onclick="toggleMobileMenu()" class="md:hidden w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-800">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Menu Mobile Dropdown -->
+        <div id="mobile-menu" class="hidden md:hidden glass border-t border-gray-200 dark:border-gray-800 px-4 pt-2 pb-4 space-y-1">
+            <button onclick="switchTab('inicio'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 rounded-lg font-medium text-sm">Início</button>
+            <button onclick="switchTab('avisos'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 rounded-lg font-medium text-sm">Avisos</button>
+            <button onclick="switchTab('cultos'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 rounded-lg font-medium text-sm">Cultos & Agenda</button>
+            <button onclick="switchTab('chat'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 rounded-lg font-medium text-sm">Chat da Igreja</button>
+            <button onclick="switchTab('galeria'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 rounded-lg font-medium text-sm">Galeria de Fotos/Vídeos</button>
+            <button onclick="switchTab('oracao'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 rounded-lg font-medium text-sm">Pedidos de Oração</button>
+            <button onclick="switchTab('contato'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 rounded-lg font-medium text-sm">Contato e Localização</button>
+            <button id="mobile-admin-btn" onclick="switchTab('admin'); toggleMobileMenu()" class="hidden block w-full text-left px-3 py-2 rounded-lg font-medium text-sm text-amber-600 dark:text-amber-400">Painel Administrativo</button>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ABA: INÍCIO -->
+        <section id="tab-inicio" class="tab-content space-y-10">
+            <!-- Banner Principal -->
+            <div class="relative rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-r from-brand-900 to-indigo-900 text-white">
+                <div class="absolute inset-0 opacity-45 mix-blend-overlay bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1543165365-07238ed8f57e?auto=format&fit=crop&w=1600&q=80')"></div>
+                <div class="relative z-10 p-8 sm:p-16 lg:p-20 max-w-3xl space-y-6">
+                    <span class="bg-brand-500/30 text-brand-200 border border-brand-400/30 px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider">Bem-vindo à Casa do Senhor</span>
+                    <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">Assembleia de Jesus – Itaqui</h2>
+                    <p class="text-gray-200 text-base sm:text-lg leading-relaxed">Um lugar de adoração, comunhão e crescimento espiritual. Venha adorar a Deus conosco e sentir a presença do Espírito Santo em sua vida.</p>
+                    <div class="flex flex-wrap gap-4 pt-4">
+                        <button onclick="switchTab('cultos')" class="bg-white text-brand-900 hover:bg-gray-100 font-semibold px-6 py-3 rounded-xl shadow-lg transition flex items-center gap-2">
+                            <i class="fa-solid fa-calendar-days"></i> Ver Horários de Culto
+                        </button>
+                        <button onclick="switchTab('oracao')" class="bg-brand-600/80 hover:bg-brand-600 text-white font-semibold px-6 py-3 rounded-xl backdrop-blur border border-white/20 transition flex items-center gap-2">
+                            <i class="fa-solid fa-hands-praying"></i> Pedir Oração
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contagem Regressiva Culto -->
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-md grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                <div>
+                    <h3 class="text-xl font-bold flex items-center gap-2 text-brand-600 dark:text-indigo-400">
+                        <i class="fa-solid fa-clock"></i> Próximo Culto
+                    </h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Culto de Celebração e Adoração a Deus</p>
+                    <p id="proximo-culto-nome" class="font-semibold text-base mt-2">Quarta-feira às 19:30</p>
+                </div>
+                <div class="md:col-span-2 flex justify-around items-center bg-gray-100 dark:bg-gray-800/60 rounded-xl p-4 text-center">
+                    <div>
+                        <span id="cd-dias" class="text-2xl sm:text-4xl font-bold text-brand-600 dark:text-indigo-400">00</span>
+                        <p class="text-xs text-gray-500 uppercase mt-1">Dias</p>
+                    </div>
+                    <span class="text-2xl font-bold text-gray-400">:</span>
+                    <div>
+                        <span id="cd-horas" class="text-2xl sm:text-4xl font-bold text-brand-600 dark:text-indigo-400">00</span>
+                        <p class="text-xs text-gray-500 uppercase mt-1">Horas</p>
+                    </div>
+                    <span class="text-2xl font-bold text-gray-400">:</span>
+                    <div>
+                        <span id="cd-min" class="text-2xl sm:text-4xl font-bold text-brand-600 dark:text-indigo-400">00</span>
+                        <p class="text-xs text-gray-500 uppercase mt-1">Min</p>
+                    </div>
+                    <span class="text-2xl font-bold text-gray-400">:</span>
+                    <div>
+                        <span id="cd-seg" class="text-2xl sm:text-4xl font-bold text-brand-600 dark:text-indigo-400">00</span>
+                        <p class="text-xs text-gray-500 uppercase mt-1">Seg</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Avisos em Destaque / Hoje -->
+            <div>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold tracking-tight">Avisos e Comunicados de Hoje</h3>
+                    <button onclick="switchTab('avisos')" class="text-brand-600 dark:text-indigo-400 font-semibold text-sm hover:underline">Ver Histórico Completo →</button>
+                </div>
+                <div id="avisos-home-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Dinamicamente injetado -->
+                    <div class="glass-card rounded-2xl p-6 text-center text-gray-500">Carregando avisos de hoje...</div>
+                </div>
+            </div>
+
+            <!-- Aniversariantes do Mês & Versículo -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass-card rounded-2xl p-6 shadow-md">
+                    <h4 class="text-lg font-bold mb-4 flex items-center gap-2 text-brand-600 dark:text-indigo-400">
+                        <i class="fa-solid fa-cake-candles"></i> Aniversariantes do Mês
+                    </h4>
+                    <div id="lista-aniversariantes" class="space-y-3">
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                            <span class="font-medium text-sm">Pr. João Silva</span>
+                            <span class="text-xs bg-brand-500/20 text-brand-600 dark:text-indigo-300 px-2.5 py-1 rounded-full font-semibold">12 de Agosto</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                            <span class="font-medium text-sm">Irmã Maria Oliveira</span>
+                            <span class="text-xs bg-brand-500/20 text-brand-600 dark:text-indigo-300 px-2.5 py-1 rounded-full font-semibold">25 de Agosto</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-6 shadow-md bg-gradient-to-br from-brand-900/10 to-indigo-900/10 border border-brand-500/20 flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-lg font-bold mb-3 flex items-center gap-2 text-brand-600 dark:text-indigo-400">
+                            <i class="fa-solid fa-book-bible"></i> Palavra do Dia
+                        </h4>
+                        <blockquote class="italic text-gray-700 dark:text-gray-300 text-base leading-relaxed">
+                            "Lâmpada para os meus pés é a tua palavra, e luz para o meu caminho."
+                        </blockquote>
+                    </div>
+                    <p class="text-xs font-semibold text-right mt-4 text-brand-600 dark:text-indigo-400">— Salmos 119:105</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA: AVISOS E HISTÓRICO -->
+        <section id="tab-avisos" class="tab-content hidden space-y-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-3xl font-extrabold tracking-tight">Mural de Avisos</h2>
+                    <p class="text-sm text-gray-500 mt-1">Avisos recentes e histórico completo da igreja.</p>
+                </div>
+                <div class="w-full sm:w-auto relative">
+                    <input type="text" id="input-busca-avisos" oninput="filtrarAvisos()" placeholder="Pesquisar avisos..." class="w-full sm:w-64 px-4 py-2.5 pl-10 rounded-xl glass-card text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <i class="fa-solid fa-search absolute left-3.5 top-3.5 text-gray-400 text-sm"></i>
+                </div>
+            </div>
+
+            <!-- Abas internas Avisos -->
+            <div class="flex space-x-2 border-b border-gray-200 dark:border-gray-800 pb-2">
+                <button onclick="switchAvisosSubTab('hoje')" id="subtab-hoje-btn" class="px-4 py-2 rounded-xl text-sm font-semibold bg-brand-600 text-white transition">Avisos de Hoje</button>
+                <button onclick="switchAvisosSubTab('historico')" id="subtab-hist-btn" class="px-4 py-2 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 transition">Histórico Anterior</button>
+            </div>
+
+            <div id="container-avisos-lista" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Injetado via JS -->
+            </div>
+        </section>
+
+        <!-- ABA: CULTOS & AGENDA -->
+        <section id="tab-cultos" class="tab-content hidden space-y-8">
+            <div>
+                <h2 class="text-3xl font-extrabold tracking-tight">Agenda de Cultos e Eventos</h2>
+                <p class="text-sm text-gray-500 mt-1">Participe dos nossos cultos semanais e eventos especiais.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="glass-card rounded-2xl p-6 shadow-md border-t-4 border-brand-600">
+                    <span class="text-xs font-semibold bg-brand-500/20 text-brand-600 dark:text-indigo-400 px-3 py-1 rounded-full">Quarta-feira</span>
+                    <h3 class="text-xl font-bold mt-3">Culto de Ensino e Oração</h3>
+                    <p class="text-sm text-gray-500 mt-2"><i class="fa-regular fa-clock"></i> 19:30 às 21:15</p>
+                    <p class="text-sm text-gray-500 mt-1"><i class="fa-solid fa-location-dot"></i> Templo Principal</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-300 mt-4">Uma noite dedicada ao estudo profundo da Palavra de Deus e intercessão.</p>
+                </div>
+                <div class="glass-card rounded-2xl p-6 shadow-md border-t-4 border-indigo-600">
+                    <span class="text-xs font-semibold bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full">Sexta-feira</span>
+                    <h3 class="text-xl 
