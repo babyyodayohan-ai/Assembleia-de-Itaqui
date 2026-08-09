@@ -1,6 +1,29 @@
 /* ====================================================
-   1. CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE
+   1. INICIALIZAÇÃO COM ES MODULES DO FIREBASE (Sua config exata)
    ==================================================== */
+import { initializeApp } from "firebase/app";
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged, 
+  updateProfile 
+} from "firebase/auth";
+import { 
+  getFirestore, 
+  collection, 
+  doc, 
+  getDoc, 
+  setDoc, 
+  addDoc, 
+  deleteDoc, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  serverTimestamp 
+} from "firebase/firestore";
+
 const firebaseConfig = {
   apiKey: "AIzaSyCTDM1w_Bl2uJhcsVQXyUivAR4vQWq1DZ4",
   authDomain: "igrejadeitaqui.firebaseapp.com",
@@ -11,24 +34,19 @@ const firebaseConfig = {
   measurementId: "G-JRRF2W6GW3"
 };
 
-if (typeof firebase !== 'undefined') {
-  firebase.initializeApp(firebaseConfig);
-  var auth = firebase.auth();
-  var db = firebase.firestore();
-  
-  // Define a persistência local para manter o utilizador ligado
-  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
-}
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 let userObj = null;
 let userData = null;
-const baseMail = "@aditaqui.app"; // Email fictício para o Firebase Auth funcionar sem pedir email ao utilizador
+const baseMail = "@aditaqui.app";
 
 // Filtro de Palavrões para a Conversa
 const badWords = ['merda', 'porra', 'caralho', 'puta', 'fdp', 'bosta', 'cacete', 'cuzão', 'cuzao', 'desgraça'];
 
 /* ====================================================
-   2. TRATAMENTO DE DATAS E TELA DE CARREGAMENTO (COM TEMPORIZADOR DE SEGURANÇA)
+   2. TRATAMENTO DE DATAS E TELA DE CARREGAMENTO (TIMEOUT DE SEGURANÇA)
    ==================================================== */
 let loadTimeout = null;
 
@@ -36,7 +54,6 @@ function showLoad() {
   const loader = document.getElementById('globalLoader');
   if (loader) loader.classList.remove('hidden');
 
-  // Trava de segurança: esconde o carregamento em 2.5s no máximo para não bloquear o utilizador
   clearTimeout(loadTimeout);
   loadTimeout = setTimeout(() => {
     hideLoad();
@@ -50,7 +67,7 @@ function hideLoad() {
 }
 
 function formatDateStr(dateObj) {
-  return dateObj.toISOString().split('T')[0]; // Formato "YYYY-MM-DD"
+  return dateObj.toISOString().split('T')[0];
 }
 
 const todayObj = new Date();
@@ -60,7 +77,6 @@ const yesterdayObj = new Date(todayObj);
 yesterdayObj.setDate(yesterdayObj.getDate() - 1);
 const yesterdayStr = formatDateStr(yesterdayObj);
 
-// Atualiza a data no topo do Card Central
 const optDate = { day: '2-digit', month: 'short', year: 'numeric' };
 const dateTextElem = document.getElementById('dateTodayText');
 if (dateTextElem) {
@@ -68,11 +84,11 @@ if (dateTextElem) {
 }
 
 /* ====================================================
-   3. AUTENTICAÇÃO (SÓ NOME DE UTILIZADOR E PALAVRA-PASSE)
+   3. AUTENTICAÇÃO E CADASTRO
    ==================================================== */
 let isLogin = true;
 
-function toggleAuth() {
+window.toggleAuth = function() {
   isLogin = !isLogin;
   document.getElementById('loginForm').classList.toggle('hidden', !isLogin);
   document.getElementById('loginForm').classList.toggle('flex', isLogin);
@@ -85,10 +101,10 @@ function toggleAuth() {
       ? 'Novo por aqui? <button onclick="toggleAuth()" class="text-church-600 font-bold">Registe-se</button>' 
       : 'Já tem conta? <button onclick="toggleAuth()" class="text-church-600 font-bold">Entrar</button>';
   }
-}
+};
 
 let pFoto = null;
-function previewPhoto(input) {
+window.previewPhoto = function(input) {
   if (input.files && input.files[0]) {
     const r = new FileReader();
     r.onload = e => {
@@ -97,9 +113,9 @@ function previewPhoto(input) {
     };
     r.readAsDataURL(input.files[0]);
   }
-}
+};
 
-async function handleAuth(e, type) {
+window.handleAuth = async function(e, type) {
   e.preventDefault();
   showLoad();
 
@@ -118,22 +134,21 @@ async function handleAuth(e, type) {
   try {
     if (type === 'login') {
       try {
-        await auth.signInWithEmailAndPassword(finalEmail, pass);
+        await signInWithEmailAndPassword(auth, finalEmail, pass);
       } catch (err) {
-        // Se a conta de Admin não existir no banco, cria-a automaticamente
         if (isAdmin && err.code === 'auth/user-not-found') {
-          const cr = await auth.createUserWithEmailAndPassword(finalEmail, pass);
-          await cr.user.updateProfile({ displayName: "Administrador" });
+          const cr = await createUserWithEmailAndPassword(auth, finalEmail, pass);
+          await updateProfile(cr.user, { displayName: "Administrador" });
         } else {
           throw new Error("Nome de utilizador ou palavra-passe incorretos.");
         }
       }
     } else {
       if (user.toLowerCase() === 'admin') throw new Error("O nome 'Admin' é reservado.");
-      const cr = await auth.createUserWithEmailAndPassword(finalEmail, pass);
+      const cr = await createUserWithEmailAndPassword(auth, finalEmail, pass);
       const pic = pFoto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80";
-      await cr.user.updateProfile({ displayName: user, photoURL: pic });
-      await db.collection('users').doc(cr.user.uid).set({ uid: cr.user.uid, name: user, role: 'member', photoURL: pic });
+      await updateProfile(cr.user, { displayName: user, photoURL: pic });
+      await setDoc(doc(db, "users", cr.user.uid), { uid: cr.user.uid, name: user, role: 'member', photoURL: pic });
     }
   } catch (err) {
     errDiv.innerText = err.message || "Erro de autenticação.";
@@ -141,24 +156,25 @@ async function handleAuth(e, type) {
   } finally {
     hideLoad();
   }
-}
+};
 
-auth.onAuthStateChanged(async (u) => {
+onAuthStateChanged(auth, async (u) => {
   showLoad();
   try {
     if (u) {
       userObj = u;
       try {
-        let doc = await db.collection('users').doc(u.uid).get();
-        if (doc.exists) {
-          userData = doc.data();
+        const uDocRef = doc(db, "users", u.uid);
+        const uDocSnap = await getDoc(uDocRef);
+        if (uDocSnap.exists()) {
+          userData = uDocSnap.data();
         } else {
           const isAd = u.email === ('admin' + baseMail);
           userData = { uid: u.uid, name: isAd ? "Administrador" : (u.displayName || "Membro"), role: isAd ? 'admin' : 'member', photoURL: u.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80" };
-          await db.collection('users').doc(u.uid).set(userData);
+          await setDoc(uDocRef, userData);
         }
       } catch (dbErr) {
-        console.warn("Erro ao obter dados do utilizador do Firestore:", dbErr);
+        console.warn("Erro ao obter dados do perfil:", dbErr);
         userData = { uid: u.uid, name: u.displayName || "Membro", role: 'member', photoURL: u.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80" };
       }
 
@@ -191,20 +207,20 @@ auth.onAuthStateChanged(async (u) => {
       document.getElementById('mainApp').classList.remove('flex');
     }
   } catch (err) {
-    console.error("Erro na verificação de autenticação:", err);
+    console.error("Erro no AuthState:", err);
   } finally {
     hideLoad();
   }
 });
 
-function handleLogout() {
-  if (confirm("Deseja sair da sua conta?")) auth.signOut();
-}
+window.handleLogout = function() {
+  if (confirm("Deseja sair da sua conta?")) signOut(auth);
+};
 
 /* ====================================================
-   4. NAVEGAÇÃO ENTRE ABAS
+   4. NAVEGAÇÃO
    ==================================================== */
-function nav(t) {
+window.nav = function(t) {
   ['secMural', 'secMensagens', 'secAdmin'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add('hidden');
@@ -230,30 +246,28 @@ function nav(t) {
     if (unread) unread.classList.add('hidden');
     scrollToBottomChat();
   }
-}
+};
 
 /* ====================================================
-   5. MURAL 3D E LIMPEZA AUTOMÁTICA DE POSTAGENS
+   5. MURAL 3D E BANCO DE DADOS
    ==================================================== */
 function startDB() {
-  // Listener de Avisos no Mural
-  db.collection('avisos').onSnapshot(snap => {
+  onSnapshot(collection(db, "avisos"), snap => {
     let postToday = null, postYest = null;
     const contT = document.getElementById('contentToday');
     const contY = document.getElementById('contentYesterday');
 
-    snap.docs.forEach(doc => {
-      let d = doc.data();
-      // Auto-exclusão para manter a aplicação rápida (apaga tudo o que for mais antigo que ontem)
+    snap.docs.forEach(docSnap => {
+      let d = docSnap.data();
+      // Auto-exclusão para manter a aplicação rápida
       if (userData?.role === 'admin' && d.dateStr < yesterdayStr) {
-        db.collection('avisos').doc(doc.id).delete();
+        deleteDoc(doc(db, "avisos", docSnap.id));
         return;
       }
-      if (d.dateStr === todayStr) postToday = { id: doc.id, ...d };
-      if (d.dateStr === yesterdayStr) postYest = { id: doc.id, ...d };
+      if (d.dateStr === todayStr) postToday = { id: docSnap.id, ...d };
+      if (d.dateStr === yesterdayStr) postYest = { id: docSnap.id, ...d };
     });
 
-    // Renderizar Card do Dia de Hoje
     if (contT) {
       if (postToday) {
         contT.innerHTML = buildCardUI(postToday, true);
@@ -268,7 +282,6 @@ function startDB() {
       }
     }
 
-    // Renderizar Card de Ontem
     if (contY) {
       if (postYest) {
         contY.innerHTML = buildCardUI(postYest, false);
@@ -278,12 +291,12 @@ function startDB() {
     }
   }, err => console.error("Erro no Listener de Avisos:", err));
 
-  // Listener das Mensagens na Conversa
-  db.collection('chat').orderBy('timestamp', 'asc').onSnapshot(snap => {
+  const chatQuery = query(collection(db, "chat"), orderBy("timestamp", "asc"));
+  onSnapshot(chatQuery, snap => {
     const feed = document.getElementById('chatFeed');
     if (feed) {
       feed.innerHTML = '';
-      snap.docs.forEach(doc => feed.appendChild(renderMsg(doc.data())));
+      snap.docs.forEach(docSnap => feed.appendChild(renderMsg(docSnap.data())));
       feed.scrollTop = feed.scrollHeight;
     }
   }, err => console.error("Erro no Listener do Chat:", err));
@@ -291,7 +304,7 @@ function startDB() {
 
 function buildCardUI(post, isToday) {
   const del = (isToday && userData?.role === 'admin') 
-    ? `<button onclick="db.collection('avisos').doc('${post.id}').delete()" class="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><i class="fa-solid fa-trash-can text-[10px]"></i></button>` 
+    ? `<button onclick="window.deleteAviso('${post.id}')" class="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><i class="fa-solid fa-trash-can text-[10px]"></i></button>` 
     : '';
   const cov = post.coverUrl ? `<div class="h-32 w-full bg-slate-200 shrink-0"><img src="${post.coverUrl}" class="w-full h-full object-cover"></div>` : '';
   const fSize = isToday ? 'text-base' : 'text-sm';
@@ -313,7 +326,13 @@ function buildCardUI(post, isToday) {
   `;
 }
 
-async function publishToday(e) {
+window.deleteAviso = async function(id) {
+  if (confirm("Deseja apagar esta publicação?")) {
+    await deleteDoc(doc(db, "avisos", id));
+  }
+};
+
+window.publishToday = async function(e) {
   e.preventDefault();
   showLoad();
 
@@ -333,14 +352,14 @@ async function publishToday(e) {
       });
     }
 
-    await db.collection('avisos').add({
+    await addDoc(collection(db, "avisos"), {
       dateStr: todayStr,
       type,
       title,
       time,
       desc,
       coverUrl,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: serverTimestamp()
     });
 
     document.getElementById('formAdmin').reset();
@@ -350,11 +369,8 @@ async function publishToday(e) {
   } finally {
     hideLoad();
   }
-}
+};
 
-/* ====================================================
-   6. MENSAGENS E ÁUDIO COM FILTRO DE PALAVRÕES
-   ==================================================== */
 function filterText(txt) {
   let f = txt;
   badWords.forEach(w => {
@@ -373,7 +389,7 @@ if (chatInpElem) {
   });
 }
 
-async function sendMsg(e) {
+window.sendMsg = async function(e) {
   e.preventDefault();
   const inp = document.getElementById('chatInput');
   const val = inp.value.trim();
@@ -386,18 +402,18 @@ async function sendMsg(e) {
   if (btnSend) btnSend.classList.add('hidden');
 
   try {
-    await db.collection('chat').add({
+    await addDoc(collection(db, "chat"), {
       text: filterText(val),
       audioUrl: null,
       senderUid: userObj.uid,
       senderName: userData?.name || 'Membro',
       senderPhoto: userData?.photoURL || '',
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      timestamp: serverTimestamp()
     });
   } catch (err) {
     console.error("Erro ao enviar mensagem:", err);
   }
-}
+};
 
 function renderMsg(m) {
   const isMe = m.senderUid === userObj?.uid;
@@ -430,7 +446,7 @@ let isRec = false;
 let recIntr = null;
 let s = 0;
 
-async function toggleAudio() {
+window.toggleAudio = async function() {
   if (!isRec) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -461,13 +477,13 @@ async function toggleAudio() {
       const rd = new FileReader();
       rd.readAsDataURL(new Blob(aCh, { type: 'audio/webm' }));
       rd.onloadend = async () => {
-        await db.collection('chat').add({
+        await addDoc(collection(db, "chat"), {
           text: null,
           audioUrl: rd.result,
           senderUid: userObj.uid,
           senderName: userData?.name || 'Membro',
           senderPhoto: userData?.photoURL || '',
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          timestamp: serverTimestamp()
         });
       };
       mRec.stream.getTracks().forEach(t => t.stop());
@@ -475,15 +491,15 @@ async function toggleAudio() {
     mRec.stop();
     rstAudio();
   }
-}
+};
 
-function cancelAudio() {
+window.cancelAudio = function() {
   if (mRec) {
     mRec.stop();
     mRec.stream.getTracks().forEach(t => t.stop());
   }
   rstAudio();
-}
+};
 
 function rstAudio() {
   isRec = false;
@@ -495,4 +511,4 @@ function rstAudio() {
   }
   const chatForm = document.getElementById('chatForm');
   if (chatForm) chatForm.classList.remove('hidden');
-     }
+   }
