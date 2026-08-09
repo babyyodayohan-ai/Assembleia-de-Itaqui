@@ -28,10 +28,16 @@
     }
   </script>
 
-  <!-- FIREBASE SDK (COMPATÍVEL) -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <!-- IMPORT MAP PARA CARREGAR MODULOS DO FIREBASE DIRETAMENTE NO NAVEGADOR -->
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+      }
+    }
+  </script>
 </head>
 <body class="text-slate-800 antialiased h-screen flex flex-col overflow-hidden">
 
@@ -229,8 +235,8 @@
     </nav>
   </div>
 
-  <!-- CARREGAMENTO DO SCRIPT PRINCIPAL -->
-  <script src="script.js"></script>
+  <!-- CARREGAMENTO DO SCRIPT PRINCIPAL EM FORMATO DE MODULO -->
+  <script type="module" src="script.js"></script>
 </body>
 </html>
 
