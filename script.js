@@ -1,5 +1,5 @@
 /* ====================================================
-   1. INICIALIZAÇÃO COM ES MODULES DO FIREBASE (Sua config exata)
+   1. INICIALIZAÇÃO FIREBASE (ES MODULES)
    ==================================================== */
 import { initializeApp } from "firebase/app";
 import { 
@@ -42,11 +42,46 @@ let userObj = null;
 let userData = null;
 const baseMail = "@aditaqui.app";
 
-// Filtro de Palavrões para a Conversa
+// Filtro de Palavrões
 const badWords = ['merda', 'porra', 'caralho', 'puta', 'fdp', 'bosta', 'cacete', 'cuzão', 'cuzao', 'desgraça'];
 
 /* ====================================================
-   2. TRATAMENTO DE DATAS E TELA DE CARREGAMENTO (TIMEOUT DE SEGURANÇA)
+   2. COMPRESSÃO DE IMAGENS (COMPACTA PERFIL E CAPAS)
+   ==================================================== */
+function compressImage(file, maxWidth, maxHeight, quality) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+    };
+  });
+}
+
+/* ====================================================
+   3. TRATAMENTO DE DATAS E TELA DE CARREGAMENTO
    ==================================================== */
 let loadTimeout = null;
 
@@ -84,7 +119,7 @@ if (dateTextElem) {
 }
 
 /* ====================================================
-   3. AUTENTICAÇÃO E CADASTRO
+   4. AUTENTICAÇÃO E PERFIL
    ==================================================== */
 let isLogin = true;
 
@@ -98,20 +133,17 @@ window.toggleAuth = function() {
   const toggleText = document.getElementById('authToggleText');
   if (toggleText) {
     toggleText.innerHTML = isLogin 
-      ? 'Novo por aqui? <button onclick="toggleAuth()" class="text-church-600 font-bold">Registe-se</button>' 
+      ? 'Novo por aqui? <button onclick="toggleAuth()" class="text-church-600 font-bold">Cadastre-se</button>' 
       : 'Já tem conta? <button onclick="toggleAuth()" class="text-church-600 font-bold">Entrar</button>';
   }
 };
 
-let pFoto = null;
-window.previewPhoto = function(input) {
+let rawPhotoFile = null;
+window.previewPhoto = async function(input) {
   if (input.files && input.files[0]) {
-    const r = new FileReader();
-    r.onload = e => {
-      document.getElementById('regPhotoPreview').src = e.target.result;
-      pFoto = e.target.result;
-    };
-    r.readAsDataURL(input.files[0]);
+    rawPhotoFile = input.files[0];
+    const previewUrl = await compressImage(rawPhotoFile, 200, 200, 0.7);
+    document.getElementById('regPhotoPreview').src = previewUrl;
   }
 };
 
@@ -138,17 +170,29 @@ window.handleAuth = async function(e, type) {
       } catch (err) {
         if (isAdmin && err.code === 'auth/user-not-found') {
           const cr = await createUserWithEmailAndPassword(auth, finalEmail, pass);
+          const adminData = { uid: cr.user.uid, name: "Administrador", role: 'admin', photoURL: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80" };
+          await setDoc(doc(db, "users", cr.user.uid), adminData);
           await updateProfile(cr.user, { displayName: "Administrador" });
         } else {
-          throw new Error("Nome de utilizador ou palavra-passe incorretos.");
+          throw new Error("Nome de Usuário ou Senha incorretos.");
         }
       }
     } else {
       if (user.toLowerCase() === 'admin') throw new Error("O nome 'Admin' é reservado.");
+      
+      let compressedPhoto = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80";
+      if (rawPhotoFile) {
+        compressedPhoto = await compressImage(rawPhotoFile, 200, 200, 0.7);
+      }
+
       const cr = await createUserWithEmailAndPassword(auth, finalEmail, pass);
-      const pic = pFoto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80";
-      await updateProfile(cr.user, { displayName: user, photoURL: pic });
-      await setDoc(doc(db, "users", cr.user.uid), { uid: cr.user.uid, name: user, role: 'member', photoURL: pic });
+      await updateProfile(cr.user, { displayName: user });
+      await setDoc(doc(db, "users", cr.user.uid), { 
+        uid: cr.user.uid, 
+        name: user, 
+        role: 'member', 
+        photoURL: compressedPhoto 
+      });
     }
   } catch (err) {
     errDiv.innerText = err.message || "Erro de autenticação.";
@@ -170,12 +214,21 @@ onAuthStateChanged(auth, async (u) => {
           userData = uDocSnap.data();
         } else {
           const isAd = u.email === ('admin' + baseMail);
-          userData = { uid: u.uid, name: isAd ? "Administrador" : (u.displayName || "Membro"), role: isAd ? 'admin' : 'member', photoURL: u.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80" };
+          userData = { 
+            uid: u.uid, 
+            name: isAd ? "Administrador" : (u.displayName || "Membro"), 
+            role: isAd ? 'admin' : 'member', 
+            photoURL: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80" 
+          };
           await setDoc(uDocRef, userData);
         }
       } catch (dbErr) {
-        console.warn("Erro ao obter dados do perfil:", dbErr);
-        userData = { uid: u.uid, name: u.displayName || "Membro", role: 'member', photoURL: u.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80" };
+        userData = { 
+          uid: u.uid, 
+          name: u.displayName || "Membro", 
+          role: 'member', 
+          photoURL: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80" 
+        };
       }
 
       const navName = document.getElementById('navName');
@@ -218,7 +271,7 @@ window.handleLogout = function() {
 };
 
 /* ====================================================
-   4. NAVEGAÇÃO
+   5. NAVEGAÇÃO ENTRE ABAS
    ==================================================== */
 window.nav = function(t) {
   ['secMural', 'secMensagens', 'secAdmin'].forEach(id => {
@@ -249,7 +302,7 @@ window.nav = function(t) {
 };
 
 /* ====================================================
-   5. MURAL 3D E BANCO DE DADOS
+   6. MURAL 3D E REALTIME FIRESTORE
    ==================================================== */
 function startDB() {
   onSnapshot(collection(db, "avisos"), snap => {
@@ -259,7 +312,6 @@ function startDB() {
 
     snap.docs.forEach(docSnap => {
       let d = docSnap.data();
-      // Auto-exclusão para manter a aplicação rápida
       if (userData?.role === 'admin' && d.dateStr < yesterdayStr) {
         deleteDoc(doc(db, "avisos", docSnap.id));
         return;
@@ -345,11 +397,7 @@ window.publishToday = async function(e) {
 
     let coverUrl = null;
     if (file) {
-      coverUrl = await new Promise(r => {
-        const fr = new FileReader();
-        fr.onload = ev => r(ev.target.result);
-        fr.readAsDataURL(file);
-      });
+      coverUrl = await compressImage(file, 600, 400, 0.75);
     }
 
     await addDoc(collection(db, "avisos"), {
@@ -371,6 +419,9 @@ window.publishToday = async function(e) {
   }
 };
 
+/* ====================================================
+   7. MENSAGENS E ÁUDIO COM FILTRO
+   ==================================================== */
 function filterText(txt) {
   let f = txt;
   badWords.forEach(w => {
@@ -407,7 +458,7 @@ window.sendMsg = async function(e) {
       audioUrl: null,
       senderUid: userObj.uid,
       senderName: userData?.name || 'Membro',
-      senderPhoto: userData?.photoURL || '',
+      senderPhoto: userData?.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
       timestamp: serverTimestamp()
     });
   } catch (err) {
@@ -425,7 +476,7 @@ function renderMsg(m) {
     : `<p class="text-xs break-words">${m.text}</p>`;
 
   d.innerHTML = `
-    ${!isMe ? `<img src="${m.senderPhoto || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80'}" class="w-6 h-6 rounded-full self-end shadow-sm">` : ''}
+    ${!isMe ? `<img src="${m.senderPhoto || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80'}" class="w-6 h-6 rounded-full self-end shadow-sm object-cover">` : ''}
     <div class="max-w-[80%] px-3 py-2 rounded-xl shadow-sm ${isMe ? 'bg-[#d9fdd3] text-slate-900 rounded-br-none' : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'}">
       ${!isMe ? `<p class="text-[9px] font-black text-emerald-600 mb-0.5">${m.senderName || 'Membro'}</p>` : ''}
       ${content}
@@ -482,7 +533,7 @@ window.toggleAudio = async function() {
           audioUrl: rd.result,
           senderUid: userObj.uid,
           senderName: userData?.name || 'Membro',
-          senderPhoto: userData?.photoURL || '',
+          senderPhoto: userData?.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
           timestamp: serverTimestamp()
         });
       };
