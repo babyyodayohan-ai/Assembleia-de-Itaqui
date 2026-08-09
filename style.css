@@ -1,29 +1,33 @@
-/* Estilos Customizados para o Aplicativo */
+/* Configurações Globais de Fundo e Scrollbar */
 body {
-  background-color: #fafafa;
+  background-color: #f8fafc;
+  font-family: 'Inter', sans-serif;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Personalização da barra de rolagem */
 ::-webkit-scrollbar {
   width: 4px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 4px;
 }
 
-/* Estilo do campo de texto estilo Instagram */
+/* Campos de entrada estilo Instagram */
 .insta-input {
   background-color: #fafafa;
   border: 1px solid #dbdbdb;
   border-radius: 4px;
-  padding: 9px 8px 7px;
+  padding: 10px;
   font-size: 13px;
   outline: none;
-  transition: border-color 0.15s ease-in-out;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .insta-input:focus {
@@ -31,7 +35,53 @@ body {
   background-color: #ffffff;
 }
 
-/* Animação para o botão de gravação de áudio */
+/* Efeito Carrossel 3D para o Mural de Avisos */
+.carousel-container {
+  perspective: 1000px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 400px;
+  position: relative;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.card-3d {
+  position: absolute;
+  width: 260px;
+  height: 360px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.card-left {
+  transform: translateX(-65%) translateZ(-150px) rotateY(20deg);
+  opacity: 0.6;
+  z-index: 1;
+  filter: blur(1px);
+}
+
+.card-center {
+  transform: translateX(0) translateZ(0) rotateY(0);
+  opacity: 1;
+  z-index: 10;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+}
+
+.card-right {
+  transform: translateX(65%) translateZ(-150px) rotateY(-20deg);
+  opacity: 0.6;
+  z-index: 1;
+  filter: blur(1px);
+}
+
+/* Animação para Gravação de Áudio */
 .recording-pulse {
   animation: pulse-red 1.5s infinite;
 }
