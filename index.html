@@ -28,7 +28,7 @@
     }
   </script>
 
-  <!-- IMPORT MAP PARA CARREGAR MODULOS DO FIREBASE DIRETAMENTE NO NAVEGADOR -->
+  <!-- IMPORT MAP DO FIREBASE -->
   <script type="importmap">
     {
       "imports": {
@@ -50,7 +50,7 @@
   </div>
 
   <!-- ==================================================== -->
-  <!-- TELA DE AUTENTICAÇÃO (SÓ NOME DE UTILIZADOR) -->
+  <!-- TELA DE AUTENTICAÇÃO (SÓ NOME DE USUÁRIO) -->
   <!-- ==================================================== -->
   <div id="authContainer" class="flex-1 flex flex-col items-center justify-center p-4 bg-slate-50 relative z-50 h-full">
     <div class="w-full max-w-[340px]">
@@ -58,26 +58,26 @@
       <div class="bg-white border border-slate-200 rounded-xl px-8 py-8 mb-4 shadow-sm text-center">
         <i class="fa-solid fa-church text-4xl text-church-600 mb-2"></i>
         <h1 class="font-display font-black text-xl text-slate-900 leading-tight">IGREJA ASSEMBLÉIA<br>DE DEUS ITAQUI</h1>
-        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-6 mt-1">Ligue-se para entrar</p>
+        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-6 mt-1">Conecte-se para entrar</p>
 
         <!-- FORMULÁRIO DE LOGIN -->
         <form id="loginForm" onsubmit="handleAuth(event, 'login')" class="flex flex-col">
-          <input type="text" id="loginUser" required placeholder="Nome de Utilizador (Ex: Admin)" class="insta-input mb-2 text-center font-medium">
-          <input type="password" id="loginPass" required placeholder="Palavra-passe" class="insta-input mb-4 text-center">
+          <input type="text" id="loginUser" required placeholder="Nome de Usuário (Ex: Admin)" class="insta-input mb-2 text-center font-medium">
+          <input type="password" id="loginPass" required placeholder="Senha" class="insta-input mb-4 text-center">
           
           <div id="loginError" class="hidden text-red-500 text-[11px] font-bold mb-3">Erro</div>
           <button type="submit" class="w-full bg-church-600 hover:bg-church-700 text-white font-bold text-sm py-2.5 rounded transition shadow">Entrar</button>
         </form>
 
-        <!-- FORMULÁRIO DE REGISTO -->
+        <!-- FORMULÁRIO DE REGISTRO -->
         <form id="registerForm" onsubmit="handleAuth(event, 'register')" class="hidden flex-col">
-          <input type="text" id="regUser" required placeholder="Crie um Nome de Utilizador" class="insta-input mb-2 text-center font-medium">
-          <input type="password" id="regPass" minlength="6" required placeholder="Crie uma Palavra-passe (Mín. 6)" class="insta-input mb-2 text-center">
+          <input type="text" id="regUser" required placeholder="Nome de Usuário" class="insta-input mb-2 text-center font-medium">
+          <input type="password" id="regPass" minlength="6" required placeholder="Crie uma Senha (Mín. 6)" class="insta-input mb-2 text-center">
           
           <div class="flex flex-col items-center mb-4 mt-2">
             <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Foto de Perfil (Opcional)</p>
             <div class="relative cursor-pointer" onclick="document.getElementById('regPhoto').click()">
-              <img id="regPhotoPreview" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80" class="w-12 h-12 rounded-full object-cover border border-slate-300">
+              <img id="regPhotoPreview" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80" class="w-14 h-14 rounded-full object-cover border border-slate-300 shadow-sm">
             </div>
             <input type="file" id="regPhoto" accept="image/*" onchange="previewPhoto(this)" class="hidden">
           </div>
@@ -89,7 +89,7 @@
 
       <div class="bg-white border border-slate-200 rounded-xl py-4 text-center text-xs shadow-sm font-medium">
         <p id="authToggleText">
-          Novo por aqui? <button onclick="toggleAuth()" class="text-church-600 font-bold">Registe-se</button>
+          Novo por aqui? <button onclick="toggleAuth()" class="text-church-600 font-bold">Cadastre-se</button>
         </p>
       </div>
     </div>
@@ -108,8 +108,8 @@
       </div>
       <div class="flex items-center gap-2">
         <div class="bg-white/10 px-2 py-1 rounded-full flex items-center gap-1.5 border border-white/5">
-          <img id="navPic" src="" class="w-5 h-5 rounded-full object-cover">
-          <span id="navName" class="text-[10px] font-bold max-w-[60px] truncate">...</span>
+          <img id="navPic" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80" class="w-6 h-6 rounded-full object-cover">
+          <span id="navName" class="text-[10px] font-bold max-w-[70px] truncate">...</span>
           <span id="navAdminBadge" class="hidden bg-amber-500 text-slate-900 text-[8px] font-black px-1 rounded uppercase">Admin</span>
         </div>
         <button onclick="handleLogout()" class="text-red-400 p-1"><i class="fa-solid fa-power-off text-sm"></i></button>
@@ -118,7 +118,7 @@
 
     <!-- ALERTA ADMIN: NENHUMA PUBLICAÇÃO HOJE -->
     <div id="adminAlertNoPost" class="hidden bg-red-600 text-white text-xs font-bold text-center py-1.5 shadow-inner">
-      <i class="fa-solid fa-triangle-exclamation mr-1"></i> Admin: Ainda não publicou nada para hoje!
+      <i class="fa-solid fa-triangle-exclamation mr-1"></i> Admin: Você ainda não publicou nada para hoje!
     </div>
 
     <!-- ABAS PRINCIPAIS -->
@@ -235,9 +235,9 @@
     </nav>
   </div>
 
-  <!-- CARREGAMENTO DO SCRIPT PRINCIPAL EM FORMATO DE MODULO -->
+  <!-- CARREGAMENTO DO SCRIPT PRINCIPAL -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
 
-                
+  
