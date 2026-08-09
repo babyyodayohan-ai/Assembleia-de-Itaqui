@@ -9,8 +9,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Ícones FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Fontes -->
+  <!-- Fontes do Google -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Estilos Customizados -->
+  <link rel="stylesheet" href="style.css">
 
   <script>
     tailwind.config = {
@@ -25,55 +28,7 @@
     }
   </script>
 
-  <style>
-    body { background-color: #f8fafc; }
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    
-    /* INPUTS ESTILO INSTAGRAM */
-    .insta-input {
-      background-color: #fafafa; border: 1px solid #dbdbdb; border-radius: 4px;
-      padding: 10px; font-size: 13px; outline: none; transition: border-color 0.2s;
-    }
-    .insta-input:focus { border-color: #a8a8a8; background-color: #fff; }
-
-    /* CARROSSEL 3D */
-    .carousel-container {
-      perspective: 1000px;
-      display: flex; justify-content: center; align-items: center;
-      height: 400px; position: relative; overflow: hidden;
-      margin-top: 10px;
-    }
-    .card-3d {
-      position: absolute; width: 260px; height: 360px;
-      background: white; border-radius: 16px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-      transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-      display: flex; flex-direction: column; overflow: hidden;
-    }
-    .card-left {
-      transform: translateX(-65%) translateZ(-150px) rotateY(20deg);
-      opacity: 0.6; z-index: 1; filter: blur(1px);
-    }
-    .card-center {
-      transform: translateX(0) translateZ(0) rotateY(0);
-      opacity: 1; z-index: 10; box-shadow: 0 15px 35px rgba(0,0,0,0.25);
-    }
-    .card-right {
-      transform: translateX(65%) translateZ(-150px) rotateY(-20deg);
-      opacity: 0.6; z-index: 1; filter: blur(1px);
-    }
-
-    /* PING GRAVAÇÃO ÁUDIO */
-    .recording-pulse { animation: pulse-red 1.5s infinite; }
-    @keyframes pulse-red {
-      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-      70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
-      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-    }
-  </style>
-
-  <!-- FIREBASE SDK -->
+  <!-- FIREBASE SDK (COMPATÍVEL) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -84,12 +39,12 @@
   <div id="globalLoader" class="hidden fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center">
     <div class="bg-white p-5 rounded-2xl flex flex-col items-center shadow-2xl">
       <div class="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mb-3"></div>
-      <p class="text-sm font-bold text-slate-700">Carregando...</p>
+      <p class="text-sm font-bold text-slate-700">A carregar...</p>
     </div>
   </div>
 
   <!-- ==================================================== -->
-  <!-- TELA DE AUTENTICAÇÃO (SÓ USUÁRIO) -->
+  <!-- TELA DE AUTENTICAÇÃO (SÓ NOME DE UTILIZADOR) -->
   <!-- ==================================================== -->
   <div id="authContainer" class="flex-1 flex flex-col items-center justify-center p-4 bg-slate-50 relative z-50 h-full">
     <div class="w-full max-w-[340px]">
@@ -97,24 +52,24 @@
       <div class="bg-white border border-slate-200 rounded-xl px-8 py-8 mb-4 shadow-sm text-center">
         <i class="fa-solid fa-church text-4xl text-church-600 mb-2"></i>
         <h1 class="font-display font-black text-xl text-slate-900 leading-tight">IGREJA ASSEMBLÉIA<br>DE DEUS ITAQUI</h1>
-        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-6 mt-1">Conecte-se para entrar</p>
+        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-6 mt-1">Ligue-se para entrar</p>
 
-        <!-- FORMULÁRIO LOGIN -->
+        <!-- FORMULÁRIO DE LOGIN -->
         <form id="loginForm" onsubmit="handleAuth(event, 'login')" class="flex flex-col">
-          <input type="text" id="loginUser" required placeholder="Nome de Usuário (Ex: Admin)" class="insta-input mb-2 text-center font-medium">
-          <input type="password" id="loginPass" required placeholder="Senha" class="insta-input mb-4 text-center">
+          <input type="text" id="loginUser" required placeholder="Nome de Utilizador (Ex: Admin)" class="insta-input mb-2 text-center font-medium">
+          <input type="password" id="loginPass" required placeholder="Palavra-passe" class="insta-input mb-4 text-center">
           
           <div id="loginError" class="hidden text-red-500 text-[11px] font-bold mb-3">Erro</div>
           <button type="submit" class="w-full bg-church-600 hover:bg-church-700 text-white font-bold text-sm py-2.5 rounded transition shadow">Entrar</button>
         </form>
 
-        <!-- FORMULÁRIO REGISTRO -->
+        <!-- FORMULÁRIO DE REGISTO -->
         <form id="registerForm" onsubmit="handleAuth(event, 'register')" class="hidden flex-col">
-          <input type="text" id="regUser" required placeholder="Crie um Nome de Usuário" class="insta-input mb-2 text-center font-medium">
-          <input type="password" id="regPass" minlength="6" required placeholder="Crie uma Senha (Mín. 6)" class="insta-input mb-2 text-center">
+          <input type="text" id="regUser" required placeholder="Crie um Nome de Utilizador" class="insta-input mb-2 text-center font-medium">
+          <input type="password" id="regPass" minlength="6" required placeholder="Crie uma Palavra-passe (Mín. 6)" class="insta-input mb-2 text-center">
           
           <div class="flex flex-col items-center mb-4 mt-2">
-            <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Foto (Opcional)</p>
+            <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Foto de Perfil (Opcional)</p>
             <div class="relative cursor-pointer" onclick="document.getElementById('regPhoto').click()">
               <img id="regPhotoPreview" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80" class="w-12 h-12 rounded-full object-cover border border-slate-300">
             </div>
@@ -128,7 +83,7 @@
 
       <div class="bg-white border border-slate-200 rounded-xl py-4 text-center text-xs shadow-sm font-medium">
         <p id="authToggleText">
-          Novo por aqui? <button onclick="toggleAuth()" class="text-church-600 font-bold">Cadastre-se</button>
+          Novo por aqui? <button onclick="toggleAuth()" class="text-church-600 font-bold">Registe-se</button>
         </p>
       </div>
     </div>
@@ -139,7 +94,7 @@
   <!-- ==================================================== -->
   <div id="mainApp" class="hidden flex-1 flex-col max-w-md mx-auto w-full bg-white shadow-2xl relative h-full border-x border-slate-200">
     
-    <!-- HEADER -->
+    <!-- CABEÇALHO -->
     <header class="bg-gradient-to-r from-slate-900 to-church-900 text-white px-4 py-3 flex items-center justify-between shadow z-30">
       <div class="flex items-center gap-2">
         <i class="fa-solid fa-church text-amber-400"></i>
@@ -155,12 +110,12 @@
       </div>
     </header>
 
-    <!-- AVISO ADMIN: NADA HOJE -->
+    <!-- ALERTA ADMIN: NENHUMA PUBLICAÇÃO HOJE -->
     <div id="adminAlertNoPost" class="hidden bg-red-600 text-white text-xs font-bold text-center py-1.5 shadow-inner">
-      <i class="fa-solid fa-triangle-exclamation mr-1"></i> Admin: Você ainda não publicou nada para hoje!
+      <i class="fa-solid fa-triangle-exclamation mr-1"></i> Admin: Ainda não publicou nada para hoje!
     </div>
 
-    <!-- ABAS -->
+    <!-- ABAS PRINCIPAIS -->
     <main class="flex-1 relative overflow-hidden bg-[#f8fafc]">
       
       <!-- ABA 1: MURAL 3D -->
@@ -177,13 +132,13 @@
             </div>
           </div>
 
-          <!-- CARD HOJE (CENTRO) -->
+          <!-- CARD HOJE (CENTRAL) -->
           <div class="card-3d card-center border-2 border-amber-400 relative" id="cardToday">
             <div class="bg-amber-400 text-slate-900 text-center py-1.5 text-[11px] font-black uppercase tracking-widest" id="dateTodayText">Hoje</div>
             <div id="contentToday" class="flex-1 flex flex-col items-center justify-center p-4 text-center">
               <div class="animate-pulse flex flex-col items-center">
                 <div class="w-10 h-10 border-4 border-slate-300 border-t-amber-500 rounded-full animate-spin mb-2"></div>
-                <p class="text-[10px] font-bold text-slate-400">Buscando...</p>
+                <p class="text-[10px] font-bold text-slate-400">A procurar...</p>
               </div>
             </div>
           </div>
@@ -195,12 +150,12 @@
               <div class="w-12 h-12 bg-slate-200 rounded-full flex items-center justify-center mb-2 shadow-inner">
                 <i class="fa-solid fa-lock text-slate-400 text-xl"></i>
               </div>
-              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Aguarde o dia<br>de amanhã</p>
+              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Aguarde pelo dia<br>de amanhã</p>
             </div>
           </div>
         </div>
         
-        <p class="text-center text-[10px] text-slate-400 font-medium mt-auto mb-4">Postagens antigas são apagadas para manter o site rápido.</p>
+        <p class="text-center text-[10px] text-slate-400 font-medium mt-auto mb-4">Publicações antigas são apagadas para manter a aplicação rápida.</p>
       </section>
 
       <!-- ABA 2: MENSAGENS -->
@@ -212,7 +167,7 @@
             </div>
             <div>
               <h2 class="font-bold text-xs leading-none">Mocidade filhos da promessa Itaqui</h2>
-              <p class="text-[9px] text-slate-500">Chat Geral da Igreja</p>
+              <p class="text-[9px] text-slate-500">Conversa Geral da Igreja</p>
             </div>
           </div>
         </div>
@@ -222,7 +177,7 @@
         <div class="absolute bottom-0 left-0 right-0 bg-slate-100 p-2 border-t border-slate-200 z-10">
           
           <div id="audioBar" class="hidden bg-red-100 rounded-full px-3 py-1.5 mb-2 flex items-center justify-between text-xs text-red-700 font-bold border border-red-200">
-            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-red-600 rounded-full recording-pulse"></span>Gravando... <span id="recTime">00:00</span></div>
+            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-red-600 rounded-full recording-pulse"></span>A gravar... <span id="recTime">00:00</span></div>
             <button onclick="cancelAudio()" class="text-red-500"><i class="fa-solid fa-trash-can"></i></button>
           </div>
 
@@ -264,7 +219,7 @@
 
     </main>
 
-    <!-- NAVEGAÇÃO INFERIOR -->
+    <!-- BARRA DE NAVEGAÇÃO INFERIOR -->
     <nav class="bg-white border-t border-slate-200 h-14 flex justify-around items-center z-40 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
       <button onclick="nav('Mural')" id="navBtnMural" class="text-church-600 flex flex-col items-center w-full"><i class="fa-solid fa-layer-group text-xl"></i></button>
       <button onclick="nav('Mensagens')" id="navBtnMensagens" class="text-slate-400 hover:text-church-600 flex flex-col items-center w-full relative">
@@ -274,90 +229,9 @@
     </nav>
   </div>
 
-  <script>
-    /* ====================================================
-       CONFIGURAÇÃO FIREBASE E VARIÁVEIS
-       ==================================================== */
-    const firebaseConfig = {
-      apiKey: "AIzaSyCTDM1w_Bl2uJhcsVQXyUivAR4vQWq1DZ4",
-      authDomain: "igrejadeitaqui.firebaseapp.com",
-      projectId: "igrejadeitaqui",
-      storageBucket: "igrejadeitaqui.firebasestorage.app",
-      messagingSenderId: "694873463575",
-      appId: "1:694873463575:web:09518c36cfab2ac318b552",
-      measurementId: "G-JRRF2W6GW3"
-    };
+  <!-- CARREGAMENTO DO SCRIPT PRINCIPAL -->
+  <script src="script.js"></script>
+</body>
+</html>
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
-
-    let userObj = null, userData = null;
-    let baseMail = "@aditaqui.app"; // Email falso estrutural
-    
-    // Palavrões
-    const badWords = ['merda', 'porra', 'caralho', 'puta', 'fdp', 'bosta', 'cacete', 'cuzão', 'cuzao', 'desgraça'];
-
-    /* ====================================================
-       FUNÇÕES UTILITÁRIAS
-       ==================================================== */
-    function showLoad() { document.getElementById('globalLoader').classList.remove('hidden'); }
-    function hideLoad() { setTimeout(() => document.getElementById('globalLoader').classList.add('hidden'), 500); }
-    
-    function formatDateStr(dateObj) {
-      return dateObj.toISOString().split('T')[0]; // "YYYY-MM-DD"
-    }
-    
-    const todayObj = new Date();
-    const todayStr = formatDateStr(todayObj);
-    const yesterdayObj = new Date(todayObj); yesterdayObj.setDate(yesterdayObj.getDate() - 1);
-    const yesterdayStr = formatDateStr(yesterdayObj);
-    
-    // Mostra data no cabeçalho central
-    const optDate = { day: '2-digit', month: 'short', year: 'numeric' };
-    document.getElementById('dateTodayText').innerText = `Hoje • ${todayObj.toLocaleDateString('pt-BR', optDate)}`;
-
-    /* ====================================================
-       AUTENTICAÇÃO (SÓ NOME DE USUÁRIO)
-       ==================================================== */
-    let isLogin = true;
-    function toggleAuth() {
-      isLogin = !isLogin;
-      document.getElementById('loginForm').classList.toggle('hidden', !isLogin);
-      document.getElementById('loginForm').classList.toggle('flex', isLogin);
-      document.getElementById('registerForm').classList.toggle('hidden', isLogin);
-      document.getElementById('registerForm').classList.toggle('flex', !isLogin);
-      document.getElementById('authToggleText').innerHTML = isLogin ? 'Novo por aqui? <button onclick="toggleAuth()" class="text-church-600 font-bold">Cadastre-se</button>' : 'Já tem conta? <button onclick="toggleAuth()" class="text-church-600 font-bold">Entrar</button>';
-    }
-
-    let pFoto = null;
-    function previewPhoto(input) {
-      if(input.files && input.files[0]) {
-        const r = new FileReader(); r.onload = e => { document.getElementById('regPhotoPreview').src = e.target.result; pFoto = e.target.result; };
-        r.readAsDataURL(input.files[0]);
-      }
-    }
-
-    async function handleAuth(e, type) {
-      e.preventDefault(); showLoad();
-      
-      let user = type === 'login' ? document.getElementById('loginUser').value.trim() : document.getElementById('regUser').value.trim();
-      let pass = type === 'login' ? document.getElementById('loginPass').value : document.getElementById('regPass').value;
-      let errDiv = document.getElementById(type === 'login' ? 'loginError' : 'regError');
-      errDiv.classList.add('hidden');
-
-      // Proteção de nome
-      let finalEmail = user.replace(/\s+/g, '').toLowerCase() + baseMail;
-      const isAdmin = user.toLowerCase() === 'admin' && pass === 'Admin@';
-
-      try {
-        if(type === 'login') {
-          try {
-            await auth.signInWithEmailAndPassword(finalEmail, pass);
-          } catch(err) {
-            // Se Admin não existe, auto-cria
-            if(isAdmin && err.code === 'auth/user-not-found') {
-              const cr = await auth.createUserWithEmailAndPassword(finalEmail, pass);
-              await cr.user.updateProfile({ displayName: "Administrador" });
-            } else { t
+              
