@@ -12,9 +12,6 @@
   <!-- Fontes do Google -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 
-  <!-- Estilos Customizados -->
-  <link rel="stylesheet" href="style.css">
-
   <script>
     tailwind.config = {
       theme: {
@@ -28,16 +25,115 @@
     }
   </script>
 
-  <!-- IMPORT MAP DO FIREBASE -->
-  <script type="importmap">
-    {
-      "imports": {
-        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
-        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+  <style>
+    /* Estilos Gerais */
+    body {
+      background-color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    /* Campos de Entrada Estilo Instagram */
+    .insta-input {
+      background-color: #fafafa;
+      border: 1px solid #dbdbdb;
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .insta-input:focus {
+      border-color: #a8a8a8;
+      background-color: #ffffff;
+    }
+
+    /* Carrossel 3D do Mural */
+    .carousel-container {
+      perspective: 1000px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 390px;
+      position: relative;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .card-3d {
+      position: absolute;
+      width: 260px;
+      height: 360px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .card-left {
+      transform: translateX(-65%) translateZ(-150px) rotateY(20deg);
+      opacity: 0.6;
+      z-index: 1;
+      filter: blur(1px);
+    }
+
+    .card-center {
+      transform: translateX(0) translateZ(0) rotateY(0);
+      opacity: 1;
+      z-index: 10;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+    }
+
+    .card-right {
+      transform: translateX(65%) translateZ(-150px) rotateY(-20deg);
+      opacity: 0.6;
+      z-index: 1;
+      filter: blur(1px);
+    }
+
+    /* Animação de Gravação de Voz */
+    .recording-pulse {
+      animation: pulse-red 1.5s infinite;
+    }
+
+    @keyframes pulse-red {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+      }
+      70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+      }
+      100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
       }
     }
-  </script>
+  </style>
+
+  <!-- FIREBASE COMPAT SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="text-slate-800 antialiased h-screen flex flex-col overflow-hidden">
 
@@ -50,29 +146,29 @@
   </div>
 
   <!-- ==================================================== -->
-  <!-- TELA DE AUTENTICAÇÃO (SÓ NOME DE USUÁRIO) -->
+  <!-- TELA DE AUTENTICAÇÃO (LOGIN / REGISTO) -->
   <!-- ==================================================== -->
   <div id="authContainer" class="flex-1 flex flex-col items-center justify-center p-4 bg-slate-50 relative z-50 h-full">
     <div class="w-full max-w-[340px]">
       
-      <div class="bg-white border border-slate-200 rounded-xl px-8 py-8 mb-4 shadow-sm text-center">
+      <div class="bg-white border border-slate-200 rounded-2xl px-8 py-8 mb-4 shadow-sm text-center">
         <i class="fa-solid fa-church text-4xl text-church-600 mb-2"></i>
         <h1 class="font-display font-black text-xl text-slate-900 leading-tight">IGREJA ASSEMBLÉIA<br>DE DEUS ITAQUI</h1>
         <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-6 mt-1">Conecte-se para entrar</p>
 
         <!-- FORMULÁRIO DE LOGIN -->
         <form id="loginForm" onsubmit="handleAuth(event, 'login')" class="flex flex-col">
-          <input type="text" id="loginUser" required placeholder="Nome de Usuário (Ex: Admin)" class="insta-input mb-2 text-center font-medium">
-          <input type="password" id="loginPass" required placeholder="Senha" class="insta-input mb-4 text-center">
+          <input type="text" id="loginUser" required placeholder="Nome de Utilizador (Ex: Admin)" class="insta-input mb-2 text-center font-medium">
+          <input type="password" id="loginPass" required placeholder="Palavra-passe" class="insta-input mb-4 text-center">
           
           <div id="loginError" class="hidden text-red-500 text-[11px] font-bold mb-3">Erro</div>
-          <button type="submit" class="w-full bg-church-600 hover:bg-church-700 text-white font-bold text-sm py-2.5 rounded transition shadow">Entrar</button>
+          <button type="submit" class="w-full bg-church-600 hover:bg-church-700 text-white font-bold text-sm py-2.5 rounded-xl transition shadow">Entrar</button>
         </form>
 
-        <!-- FORMULÁRIO DE REGISTRO -->
+        <!-- FORMULÁRIO DE REGISTO -->
         <form id="registerForm" onsubmit="handleAuth(event, 'register')" class="hidden flex-col">
-          <input type="text" id="regUser" required placeholder="Nome de Usuário" class="insta-input mb-2 text-center font-medium">
-          <input type="password" id="regPass" minlength="6" required placeholder="Crie uma Senha (Mín. 6)" class="insta-input mb-2 text-center">
+          <input type="text" id="regUser" required placeholder="Nome de Utilizador" class="insta-input mb-2 text-center font-medium">
+          <input type="password" id="regPass" minlength="6" required placeholder="Crie uma Palavra-passe (Mín. 6)" class="insta-input mb-2 text-center">
           
           <div class="flex flex-col items-center mb-4 mt-2">
             <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Foto de Perfil (Opcional)</p>
@@ -83,13 +179,13 @@
           </div>
 
           <div id="regError" class="hidden text-red-500 text-[11px] font-bold mb-3">Erro</div>
-          <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-2.5 rounded transition shadow">Criar Conta</button>
+          <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-2.5 rounded-xl transition shadow">Criar Conta</button>
         </form>
       </div>
 
       <div class="bg-white border border-slate-200 rounded-xl py-4 text-center text-xs shadow-sm font-medium">
         <p id="authToggleText">
-          Novo por aqui? <button onclick="toggleAuth()" class="text-church-600 font-bold">Cadastre-se</button>
+          Novo por aqui? <button onclick="toggleAuth()" class="text-church-600 font-bold">Registe-se</button>
         </p>
       </div>
     </div>
@@ -118,7 +214,7 @@
 
     <!-- ALERTA ADMIN: NENHUMA PUBLICAÇÃO HOJE -->
     <div id="adminAlertNoPost" class="hidden bg-red-600 text-white text-xs font-bold text-center py-1.5 shadow-inner">
-      <i class="fa-solid fa-triangle-exclamation mr-1"></i> Admin: Você ainda não publicou nada para hoje!
+      <i class="fa-solid fa-triangle-exclamation mr-1"></i> Admin: Ainda não publicou nada para hoje!
     </div>
 
     <!-- ABAS PRINCIPAIS -->
@@ -235,7 +331,100 @@
     </nav>
   </div>
 
-  <!-- CARREGAMENTO DO SCRIPT PRINCIPAL -->
-  <script type="module" src="script.js"></script>
-</body>
-</html>
+  <!-- SCRIPT COMPLETO INTEGRADO -->
+  <script>
+    /* ====================================================
+       1. INICIALIZAÇÃO FIREBASE (SDK COMPAT)
+       ==================================================== */
+    const firebaseConfig = {
+      apiKey: "AIzaSyCTDM1w_Bl2uJhcsVQXyUivAR4vQWq1DZ4",
+      authDomain: "igrejadeitaqui.firebaseapp.com",
+      projectId: "igrejadeitaqui",
+      storageBucket: "igrejadeitaqui.firebasestorage.app",
+      messagingSenderId: "694873463575",
+      appId: "1:694873463575:web:09518c36cfab2ac318b552",
+      measurementId: "G-JRRF2W6GW3"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+
+    let userObj = null;
+    let userData = null;
+    const baseMail = "@aditaqui.app";
+
+    // Filtro de Palavrões
+    const badWords = ['merda', 'porra', 'caralho', 'puta', 'fdp', 'bosta', 'cacete', 'cuzão', 'cuzao', 'desgraça'];
+
+    /* ====================================================
+       2. COMPRESSÃO DE IMAGENS (COMPACTA PERFIL E CAPAS)
+       ==================================================== */
+    function compressImage(file, maxWidth, maxHeight, quality) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            if (width > height) {
+              if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              }
+            } else {
+              if (height > maxHeight) {
+                width = Math.round((width * maxHeight) / height);
+                height = maxHeight;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+        };
+      });
+    }
+
+    /* ====================================================
+       3. TRATAMENTO DE DATAS E TELA DE CARREGAMENTO
+       ==================================================== */
+    let loadTimeout = null;
+
+    function showLoad() {
+      const loader = document.getElementById('globalLoader');
+      if (loader) loader.classList.remove('hidden');
+
+      clearTimeout(loadTimeout);
+      loadTimeout = setTimeout(() => {
+        hideLoad();
+      }, 2500);
+    }
+
+    function hideLoad() {
+      clearTimeout(loadTimeout);
+      const loader = document.getElementById('globalLoader');
+      if (loader) loader.classList.add('hidden');
+    }
+
+    function formatDateStr(dateObj) {
+      return dateObj.toISOString().split('T')[0];
+    }
+
+    const todayObj = new Date();
+    const todayStr = formatDateStr(todayObj);
+
+    const yesterdayObj = new Date(todayObj);
+    yesterdayObj.setDate(yesterdayObj.getDate() - 1);
+    const yesterdayStr = formatDateStr(yesterdayObj);
+
+    const optDate = { day: '2-digit', month: 'short', year: 'numeric' };
+    const dateTextElem = document.getElementById('dateTodayText');
+    if (dateTextElem)
