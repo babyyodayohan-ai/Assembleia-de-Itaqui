@@ -1,5 +1,5 @@
 /* ====================================================
-   1. CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE
+   1. CONFIGURAÇÃO DO FIREBASE E VARIÁVEIS GLOBAIS
    ==================================================== */
 const firebaseConfig = {
   apiKey: "AIzaSyCTDM1w_Bl2uJhcsVQXyUivAR4vQWq1DZ4",
@@ -11,440 +11,407 @@ const firebaseConfig = {
   measurementId: "G-JRRF2W6GW3"
 };
 
-if (typeof firebase !== 'undefined') {
-  firebase.initializeApp(firebaseConfig);
-  var auth = firebase.auth();
-  var db = firebase.firestore();
-  
-  // Define persistência local para manter o utilizador conectado
-  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
-}
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
 
-let currentUser = null;
-let currentUserData = null;
-let currentTab = 'avisos';
+let userObj = null;
+let userData = null;
+const baseMail = "@aditaqui.app"; // Email fictício para o Firebase Auth funcionar sem pedir email ao usuário
 
-// Configurações do Administrador
-const ADMIN_USER = "Admin2026";
-const ADMIN_PASS = "Admin";
-const ADMIN_EMAIL = "admin2026@igrejadeitaqui.com";
+// Filtro de Palavrões para o Chat
+const badWords = ['merda', 'porra', 'caralho', 'puta', 'fdp', 'bosta', 'cacete', 'cuzão', 'cuzao', 'desgraça'];
 
 /* ====================================================
-   2. ALTERNÂNCIA DE TELA (LOGIN / REGISTRO ESTILO INSTAGRAM)
+   2. TRATAMENTO DE DATAS E TELA DE CARREGAMENTO
    ==================================================== */
-let isLoginMode = true;
+function showLoad() {
+  const loader = document.getElementById('globalLoader');
+  if (loader) loader.classList.remove('hidden');
+}
 
-function toggleAuthMode() {
-  isLoginMode = !isLoginMode;
-  const formLogin = document.getElementById('loginForm');
-  const formReg = document.getElementById('registerForm');
-  const switchText = document.getElementById('switchText');
+function hideLoad() {
+  setTimeout(() => {
+    const loader = document.getElementById('globalLoader');
+    if (loader) loader.classList.add('hidden');
+  }, 500);
+}
 
-  if (isLoginMode) {
-    formLogin.classList.remove('hidden');
-    formLogin.classList.add('flex');
-    formReg.classList.add('hidden');
-    formReg.classList.remove('flex');
-    switchText.innerHTML = `Não tem uma conta? <button type="button" onclick="toggleAuthMode()" class="text-blue-500 font-bold outline-none">Cadastre-se</button>`;
-  } else {
-    formLogin.classList.add('hidden');
-    formLogin.classList.remove('flex');
-    formReg.classList.remove('hidden');
-    formReg.classList.add('flex');
-    switchText.innerHTML = `Já tem uma conta? <button type="button" onclick="toggleAuthMode()" class="text-blue-500 font-bold outline-none">Conecte-se</button>`;
+function formatDateStr(dateObj) {
+  return dateObj.toISOString().split('T')[0]; // Formato "YYYY-MM-DD"
+}
+
+const todayObj = new Date();
+const todayStr = formatDateStr(todayObj);
+
+const yesterdayObj = new Date(todayObj);
+yesterdayObj.setDate(yesterdayObj.getDate() - 1);
+const yesterdayStr = formatDateStr(yesterdayObj);
+
+// Atualiza a data no topo do Card Central
+const optDate = { day: '2-digit', month: 'short', year: 'numeric' };
+const dateTextElem = document.getElementById('dateTodayText');
+if (dateTextElem) {
+  dateTextElem.innerText = `Hoje • ${todayObj.toLocaleDateString('pt-BR', optDate)}`;
+}
+
+/* ====================================================
+   3. AUTENTICAÇÃO (SÓ NOME DE USUÁRIO E SENHA)
+   ==================================================== */
+let isLogin = true;
+
+function toggleAuth() {
+  isLogin = !isLogin;
+  document.getElementById('loginForm').classList.toggle('hidden', !isLogin);
+  document.getElementById('loginForm').classList.toggle('flex', isLogin);
+  document.getElementById('registerForm').classList.toggle('hidden', isLogin);
+  document.getElementById('registerForm').classList.toggle('flex', !isLogin);
+  
+  const toggleText = document.getElementById('authToggleText');
+  if (toggleText) {
+    toggleText.innerHTML = isLogin 
+      ? 'Novo por aqui? <button onclick="toggleAuth()" class="text-church-600 font-bold">Cadastre-se</button>' 
+      : 'Já tem conta? <button onclick="toggleAuth()" class="text-church-600 font-bold">Entrar</button>';
   }
 }
 
-// Monitor de estado do utilizador (Mostra App ou Formulário de Login)
-auth.onAuthStateChanged(async (user) => {
-  if (user) {
-    currentUser = user;
-    await carregarPerfil(user);
+let pFoto = null;
+function previewPhoto(input) {
+  if (input.files && input.files[0]) {
+    const r = new FileReader();
+    r.onload = e => {
+      document.getElementById('regPhotoPreview').src = e.target.result;
+      pFoto = e.target.result;
+    };
+    r.readAsDataURL(input.files[0]);
+  }
+}
+
+async function handleAuth(e, type) {
+  e.preventDefault();
+  showLoad();
+
+  const user = type === 'login' 
+    ? document.getElementById('loginUser').value.trim() 
+    : document.getElementById('regUser').value.trim();
+  const pass = type === 'login' 
+    ? document.getElementById('loginPass').value 
+    : document.getElementById('regPass').value;
+  const errDiv = document.getElementById(type === 'login' ? 'loginError' : 'regError');
+  errDiv.classList.add('hidden');
+
+  const finalEmail = user.replace(/\s+/g, '').toLowerCase() + baseMail;
+  const isAdmin = user.toLowerCase() === 'admin' && pass === 'Admin@';
+
+  try {
+    if (type === 'login') {
+      try {
+        await auth.signInWithEmailAndPassword(finalEmail, pass);
+      } catch (err) {
+        // Se a conta de Admin não existir no banco, cria ela automaticamente
+        if (isAdmin && err.code === 'auth/user-not-found') {
+          const cr = await auth.createUserWithEmailAndPassword(finalEmail, pass);
+          await cr.user.updateProfile({ displayName: "Administrador" });
+        } else {
+          throw new Error("Usuário ou senha incorretos.");
+        }
+      }
+    } else {
+      if (user.toLowerCase() === 'admin') throw new Error("O nome 'Admin' é reservado.");
+      const cr = await auth.createUserWithEmailAndPassword(finalEmail, pass);
+      const pic = pFoto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80";
+      await cr.user.updateProfile({ displayName: user, photoURL: pic });
+      await db.collection('users').doc(cr.user.uid).set({ uid: cr.user.uid, name: user, role: 'member', photoURL: pic });
+    }
+  } catch (err) {
+    errDiv.innerText = err.message || "Erro de autenticação.";
+    errDiv.classList.remove('hidden');
+    hideLoad();
+  }
+}
+
+auth.onAuthStateChanged(async (u) => {
+  showLoad();
+  if (u) {
+    userObj = u;
+    let doc = await db.collection('users').doc(u.uid).get();
+    if (doc.exists) {
+      userData = doc.data();
+    } else {
+      const isAd = u.email === ('admin' + baseMail);
+      userData = { uid: u.uid, name: isAd ? "Administrador" : u.displayName, role: isAd ? 'admin' : 'member', photoURL: u.photoURL };
+      await db.collection('users').doc(u.uid).set(userData);
+    }
+
+    document.getElementById('navName').innerText = userData.name;
+    document.getElementById('navPic').src = userData.photoURL;
+    if (userData.role === 'admin') {
+      document.getElementById('navAdminBadge').classList.remove('hidden');
+      document.getElementById('navBtnAdmin').classList.remove('hidden');
+      document.getElementById('navBtnAdmin').classList.add('flex');
+    }
+
     document.getElementById('authContainer').classList.add('hidden');
-    document.getElementById('authContainer').classList.remove('flex');
     document.getElementById('mainApp').classList.remove('hidden');
     document.getElementById('mainApp').classList.add('flex');
-    iniciarRealtime();
+
+    startDB();
+    nav('Mural');
   } else {
-    currentUser = null;
-    currentUserData = null;
+    userObj = null;
+    userData = null;
     document.getElementById('authContainer').classList.remove('hidden');
-    document.getElementById('authContainer').classList.add('flex');
     document.getElementById('mainApp').classList.add('hidden');
     document.getElementById('mainApp').classList.remove('flex');
   }
+  hideLoad();
 });
 
-async function carregarPerfil(user) {
-  const doc = await db.collection('users').doc(user.uid).get();
-  if (doc.exists) {
-    currentUserData = doc.data();
-  } else {
-    const isAdmin = user.email === ADMIN_EMAIL;
-    currentUserData = {
-      uid: user.uid,
-      name: isAdmin ? "Administrador" : (user.displayName || "Membro"),
-      email: user.email,
-      photoURL: user.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80",
-      role: isAdmin ? "admin" : "member",
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    await db.collection('users').doc(user.uid).set(currentUserData);
-  }
-  
-  // Atualiza informações na barra superior
-  document.getElementById('navUserName').innerText = currentUserData.name;
-  document.getElementById('navUserProfilePic').src = currentUserData.photoURL;
-  
-  if (currentUserData.role === 'admin') {
-    document.getElementById('navAdminBadge').classList.remove('hidden');
-    document.getElementById('navBtnAdmin').classList.remove('hidden');
-    document.getElementById('navBtnAdmin').classList.add('flex');
-  }
+function handleLogout() {
+  if (confirm("Deseja sair da sua conta?")) auth.signOut();
 }
 
 /* ====================================================
-   3. FUNÇÕES DE AUTENTICAÇÃO E CADASTRO
+   4. NAVEGAÇÃO ENTRE ABAS
    ==================================================== */
-async function handleLogin(e) {
-  e.preventDefault();
-  const login = document.getElementById('loginUser').value.trim();
-  const pass = document.getElementById('loginPass').value.trim();
-  const err = document.getElementById('loginError');
-  const btn = document.getElementById('btnLogin');
-  
-  err.classList.add('hidden');
-  btn.disabled = true; 
-  btn.innerText = "Entrando...";
+function nav(t) {
+  showLoad();
+  ['secMural', 'secMensagens', 'secAdmin'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  document.getElementById('sec' + t).classList.remove('hidden');
+  document.getElementById('sec' + t).classList.add('flex');
 
-  let emailTarget = login;
-  if (login.toLowerCase() === ADMIN_USER.toLowerCase()) emailTarget = ADMIN_EMAIL;
+  const inat = "text-slate-400 flex flex-col items-center w-full";
+  document.getElementById('navBtnMural').className = t === 'Mural' ? "text-church-600 flex flex-col items-center w-full" : inat;
+  document.getElementById('navBtnMensagens').className = t === 'Mensagens' ? "text-church-600 flex flex-col items-center w-full relative" : inat + " relative";
+  document.getElementById('navBtnAdmin').className = t === 'Admin' ? "text-amber-500 flex flex-col items-center w-full" : inat;
+  hideLoad();
+}
 
-  try {
-    await auth.signInWithEmailAndPassword(emailTarget, pass);
-  } catch (error) {
-    // Criação automática do Admin na primeira execução
-    if (emailTarget === ADMIN_EMAIL && pass === ADMIN_PASS && error.code === 'auth/user-not-found') {
-      try {
-        const acc = await auth.createUserWithEmailAndPassword(ADMIN_EMAIL, ADMIN_PASS);
-        await acc.user.updateProfile({ displayName: "Administrador" });
-      } catch (e) { 
-        err.innerText = "Erro ao criar conta de Administrador."; 
-        err.classList.remove('hidden'); 
+/* ====================================================
+   5. MURAL 3D E LIMPEZA AUTOMÁTICA DE POSTAGENS
+   ==================================================== */
+function startDB() {
+  // Listener de Avisos no Mural
+  db.collection('avisos').onSnapshot(snap => {
+    let postToday = null, postYest = null;
+    const contT = document.getElementById('contentToday');
+    const contY = document.getElementById('contentYesterday');
+
+    snap.docs.forEach(doc => {
+      let d = doc.data();
+      // Auto-exclusão para manter o site leve (apaga tudo que for mais antigo que ontem)
+      if (userData?.role === 'admin' && d.dateStr < yesterdayStr) {
+        db.collection('avisos').doc(doc.id).delete();
+        return;
       }
-    } else {
-      err.innerText = "Dados de acesso incorretos. Tente novamente.";
-      err.classList.remove('hidden');
-    }
-  } finally {
-    btn.disabled = false; 
-    btn.innerText = "Entrar";
-  }
-}
-
-let regFoto = null;
-function previewProfilePhoto(input) {
-  if (input.files && input.files[0]) {
-    const reader = new FileReader();
-    reader.onload = e => {
-      document.getElementById('regPhotoPreview').src = e.target.result;
-      regFoto = e.target.result;
-    };
-    reader.readAsDataURL(input.files[0]);
-  }
-}
-
-async function handleRegister(e) {
-  e.preventDefault();
-  const name = document.getElementById('regName').value.trim();
-  const email = document.getElementById('regEmail').value.trim();
-  const pass = document.getElementById('regPass').value;
-  const err = document.getElementById('regError');
-  const btn = document.getElementById('btnRegister');
-
-  err.classList.add('hidden');
-  if (email.toLowerCase() === ADMIN_EMAIL) {
-    err.innerText = "Este e-mail é reservado."; 
-    err.classList.remove('hidden'); 
-    return;
-  }
-
-  btn.disabled = true; 
-  btn.innerText = "Criando conta...";
-  try {
-    const cred = await auth.createUserWithEmailAndPassword(email, pass);
-    const pic = regFoto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80";
-    await cred.user.updateProfile({ displayName: name, photoURL: pic });
-    
-    await db.collection('users').doc(cred.user.uid).set({
-      uid: cred.user.uid,
-      name: name,
-      email: email,
-      photoURL: pic,
-      role: 'member',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      if (d.dateStr === todayStr) postToday = { id: doc.id, ...d };
+      if (d.dateStr === yesterdayStr) postYest = { id: doc.id, ...d };
     });
-  } catch (error) {
-    err.innerText = "Erro: Este e-mail já está em uso."; 
-    err.classList.remove('hidden');
-  } finally {
-    btn.disabled = false; 
-    btn.innerText = "Cadastre-se";
-  }
-}
 
-function handleLogout() { 
-  if (confirm("Deseja sair da sua conta?")) {
-    auth.signOut(); 
-  }
-}
-
-/* ====================================================
-   4. NAVEGAÇÃO E ABAS DO APLICATIVO
-   ==================================================== */
-function switchMainTab(tab) {
-  currentTab = tab;
-  ['secAvisos', 'secMensagens', 'secAdmin'].forEach(id => document.getElementById(id).classList.add('hidden'));
-  
-  const targetSec = document.getElementById('sec' + tab.charAt(0).toUpperCase() + tab.slice(1));
-  targetSec.classList.remove('hidden');
-  targetSec.classList.add('flex');
-  
-  const inativo = "flex flex-col items-center text-slate-400 w-full";
-  document.getElementById('navBtnAvisos').className = tab === 'avisos' ? "flex flex-col items-center text-blue-600 w-full" : inativo;
-  document.getElementById('navBtnMensagens').className = tab === 'mensagens' ? "flex flex-col items-center text-blue-600 w-full relative" : inativo + " hover:text-blue-600 relative";
-  document.getElementById('navBtnAdmin').className = tab === 'admin' ? "flex flex-col items-center text-amber-600 w-full" : inativo + " hover:text-amber-600";
-
-  if (tab === 'mensagens') {
-    document.getElementById('unreadChatBadge').classList.add('hidden');
-    scrollToBottomChat();
-  }
-}
-
-// Controla exibição do botão de enviar vs microfone no Chat
-const chatInputElem = document.getElementById('chatInput');
-if (chatInputElem) {
-  chatInputElem.addEventListener('input', function() {
-    const value = this.value.trim();
-    document.getElementById('micBtn').classList.toggle('hidden', value.length > 0);
-    document.getElementById('sendBtn').classList.toggle('hidden', value.length === 0);
-  });
-}
-
-/* ====================================================
-   5. TEMPO REAL (FIRESTORE BANCO DE DADOS)
-   ==================================================== */
-function iniciarRealtime() {
-  // Atualizações do Mural de Avisos
-  db.collection('avisos').orderBy('createdAt', 'desc').onSnapshot(snap => {
-    const feed = document.getElementById('avisosFeed');
-    feed.innerHTML = '';
-    if (snap.empty) {
-      document.getElementById('emptyAvisos').classList.remove('hidden');
+    // Renderizar Card do Dia de Hoje
+    if (postToday) {
+      contT.innerHTML = buildCardUI(postToday, true);
+      document.getElementById('adminAlertNoPost').classList.add('hidden');
     } else {
-      document.getElementById('emptyAvisos').classList.add('hidden');
-      snap.docs.forEach(doc => feed.appendChild(renderAviso(doc.id, doc.data())));
+      contT.innerHTML = `<i class="fa-solid fa-calendar-xmark text-4xl text-slate-200 mb-2"></i><p class="text-xs text-slate-400 font-bold">Nenhum evento para hoje.</p>`;
+      if (userData?.role === 'admin') document.getElementById('adminAlertNoPost').classList.remove('hidden');
+    }
+
+    // Renderizar Card de Ontem
+    if (postYest) {
+      contY.innerHTML = buildCardUI(postYest, false);
+    } else {
+      contY.innerHTML = `<i class="fa-solid fa-clock-rotate-left text-3xl text-slate-300 mb-2"></i><p class="text-[10px] text-slate-400 font-bold uppercase">Passou</p>`;
     }
   });
 
-  // Atualizações das Mensagens no Chat
-  let first = true;
+  // Listener das Mensagens no Chat
   db.collection('chat').orderBy('timestamp', 'asc').onSnapshot(snap => {
     const feed = document.getElementById('chatFeed');
     feed.innerHTML = '';
-    snap.docs.forEach(doc => feed.appendChild(renderChat(doc.data())));
-    
-    if (!first && snap.docChanges().some(c => c.type === 'added')) {
-      if (currentTab !== 'mensagens') {
-        document.getElementById('unreadChatBadge').classList.remove('hidden');
-      }
-    }
-    first = false;
-    scrollToBottomChat();
+    snap.docs.forEach(doc => feed.appendChild(renderMsg(doc.data())));
+    feed.scrollTop = feed.scrollHeight;
   });
 }
 
-function renderAviso(id, data) {
-  const div = document.createElement('div');
-  div.className = "bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm";
-  
-  const del = (currentUserData?.role === 'admin') ? 
-    `<button onclick="db.collection('avisos').doc('${id}').delete()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-sm"></i></button>` : '';
-  
-  div.innerHTML = `
-    ${data.coverUrl ? `<img src="${data.coverUrl}" class="w-full h-36 object-cover">` : ''}
-    <div class="p-3">
-      <div class="flex justify-between items-start mb-1">
-        <div class="flex gap-1 mb-1">
-          <span class="px-1.5 py-0.5 text-[9px] font-bold rounded bg-slate-100 text-slate-500 border">${data.type}</span>
-          <span class="px-1.5 py-0.5 text-[9px] font-bold rounded bg-blue-50 text-blue-600 border border-blue-100">${data.target}</span>
-        </div>
-        ${del}
-      </div>
-      <h3 class="font-bold text-[15px] leading-tight text-slate-800">${data.title}</h3>
-      <p class="text-[11px] text-amber-600 font-semibold mt-1.5"><i class="fa-solid fa-clock mr-1"></i>${data.time}</p>
-      ${data.description ? `<p class="text-[11px] text-slate-500 mt-2 leading-relaxed">${data.description}</p>` : ''}
-    </div>
-  `;
-  return div;
-}
+function buildCardUI(post, isToday) {
+  const del = (isToday && userData?.role === 'admin') 
+    ? `<button onclick="db.collection('avisos').doc('${post.id}').delete()" class="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><i class="fa-solid fa-trash-can text-[10px]"></i></button>` 
+    : '';
+  const cov = post.coverUrl ? `<div class="h-32 w-full bg-slate-200 shrink-0"><img src="${post.coverUrl}" class="w-full h-full object-cover"></div>` : '';
+  const fSize = isToday ? 'text-base' : 'text-sm';
+  const dateRender = post.dateStr.split('-').reverse().join('/');
 
-function renderChat(msg) {
-  const isMe = msg.senderUid === currentUser?.uid;
-  const isAdmin = msg.senderRole === 'admin';
-  const div = document.createElement('div');
-  div.className = `flex gap-2 w-full ${isMe ? 'justify-end' : 'justify-start'}`;
-
-  let content = msg.audioUrl ? 
-    `<div class="flex items-center gap-2"><i class="fa-solid fa-microphone ${isMe ? 'text-blue-200' : 'text-emerald-500'}"></i><audio controls src="${msg.audioUrl}" class="h-6 max-w-[150px] outline-none"></audio></div>` : 
-    `<p class="text-[13px] leading-snug break-words">${msg.text}</p>`;
-
-  const bg = isMe ? 'bg-[#d9fdd3] text-slate-900 rounded-tr-sm' : (isAdmin ? 'bg-slate-800 text-white rounded-tl-sm' : 'bg-white text-slate-900 border border-slate-200 rounded-tl-sm');
-
-  div.innerHTML = `
-    ${!isMe ? `<img src="${msg.senderPhoto}" class="w-6 h-6 rounded-full object-cover shadow-sm self-end mb-1">` : ''}
-    <div class="max-w-[80%] px-3 py-1.5 rounded-2xl shadow-sm ${bg}">
-      ${!isMe ? `<p class="text-[10px] font-bold ${isAdmin ? 'text-amber-400' : 'text-emerald-600'} mb-0.5">${msg.senderName}</p>` : ''}
-      ${content}
-    </div>
-  `;
-  return div;
-}
-
-function scrollToBottomChat() {
-  const c = document.getElementById('chatFeed');
-  if (c) c.scrollTop = c.scrollHeight;
-}
-
-/* ====================================================
-   6. MENSAGENS DE TEXTO E ÁUDIO
-   ==================================================== */
-async function sendTextMessage(e) {
-  e.preventDefault();
-  const inp = document.getElementById('chatInput');
-  const text = inp.value.trim();
-  if (!text) return;
-  
-  inp.value = ''; 
-  document.getElementById('micBtn').classList.remove('hidden');
-  document.getElementById('sendBtn').classList.add('hidden');
-
-  await db.collection('chat').add({ 
-    text: text, 
-    audioUrl: null, 
-    senderUid: currentUser.uid, 
-    senderName: currentUserData.name, 
-    senderPhoto: currentUserData.photoURL, 
-    senderRole: currentUserData.role, 
-    timestamp: firebase.firestore.FieldValue.serverTimestamp() 
-  });
-}
-
-let mediaRecorder = null;
-let audioChunks = [];
-let isRecording = false;
-let recInt = null;
-let recSecs = 0;
-
-async function toggleAudioRecording() {
-  if (!isRecording) {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-      audioChunks = [];
-      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-      mediaRecorder.start();
-      isRecording = true;
-
-      document.getElementById('chatForm').classList.add('hidden');
-      document.getElementById('audioRecordingBar').classList.remove('hidden');
-      document.getElementById('audioRecordingBar').classList.add('flex');
+  return `
+    ${cov}
+    <div class="flex-1 p-3 flex flex-col text-left w-full relative">
+      ${del}
+      <div class="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-[9px] font-black uppercase rounded self-start mb-1">${post.type}</div>
+      <h3 class="font-bold ${fSize} text-slate-800 leading-tight">${post.title}</h3>
       
-      recSecs = 0; 
-      document.getElementById('recordingTimer').innerText = "00:00";
-      recInt = setInterval(() => {
-        recSecs++; 
-        document.getElementById('recordingTimer').innerText = `00:${String(recSecs).padStart(2, '0')}`;
-      }, 1000);
-    } catch (e) { 
-      alert("Permissão de microfone indisponível no navegador."); 
-    }
-  } else {
-    mediaRecorder.onstop = async () => {
-      const reader = new FileReader();
-      reader.readAsDataURL(new Blob(audioChunks, { type: 'audio/webm' }));
-      reader.onloadend = async () => {
-        await db.collection('chat').add({ 
-          text: null, 
-          audioUrl: reader.result, 
-          senderUid: currentUser.uid, 
-          senderName: currentUserData.name, 
-          senderPhoto: currentUserData.photoURL, 
-          senderRole: currentUserData.role, 
-          timestamp: firebase.firestore.FieldValue.serverTimestamp() 
-        });
-      };
-      mediaRecorder.stream.getTracks().forEach(t => t.stop());
-    };
-    mediaRecorder.stop();
-    resetAudio();
-  }
+      <div class="mt-2 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-100 self-start">
+        <i class="fa-solid fa-calendar mr-1"></i>${dateRender} • <i class="fa-solid fa-clock ml-1 mr-1"></i>${post.time}
+      </div>
+      
+      ${post.desc ? `<p class="text-[10px] text-slate-500 mt-2 line-clamp-3 leading-snug">${post.desc}</p>` : ''}
+    </div>
+  `;
 }
 
-function cancelAudioRecording() {
-  if (mediaRecorder) { 
-    mediaRecorder.stop(); 
-    mediaRecorder.stream.getTracks().forEach(t => t.stop()); 
-  }
-  resetAudio();
-}
-
-function resetAudio() {
-  isRecording = false; 
-  clearInterval(recInt);
-  document.getElementById('audioRecordingBar').classList.add('hidden');
-  document.getElementById('audioRecordingBar').classList.remove('flex');
-  document.getElementById('chatForm').classList.remove('hidden');
-  document.getElementById('chatForm').classList.add('flex');
-}
-
-/* ====================================================
-   7. PUBLICAR AVISOS (PAINEL DO ADMINISTRADOR)
-   ==================================================== */
-async function publishAviso(e) {
+async function publishToday(e) {
   e.preventDefault();
-  const btn = document.getElementById('btnPublishAviso');
-  btn.innerText = "Publicando..."; 
-  btn.disabled = true;
+  showLoad();
 
-  const title = document.getElementById('avisoTitle').value;
-  const time = document.getElementById('avisoTime').value;
-  const type = document.getElementById('avisoType').value;
-  const target = document.getElementById('avisoTarget').value;
-  const desc = document.getElementById('avisoDescription').value;
-  const file = document.getElementById('avisoCoverFile').files[0];
-  
+  const type = document.getElementById('pubType').value;
+  const title = document.getElementById('pubTitle').value;
+  const time = document.getElementById('pubTime').value;
+  const desc = document.getElementById('pubDesc').value;
+  const file = document.getElementById('pubCover').files[0];
+
   let coverUrl = null;
   if (file) {
     coverUrl = await new Promise(r => {
-      const reader = new FileReader(); 
-      reader.onload = ev => r(ev.target.result); 
-      reader.readAsDataURL(file);
+      const fr = new FileReader();
+      fr.onload = ev => r(ev.target.result);
+      fr.readAsDataURL(file);
     });
   }
 
-  await db.collection('avisos').add({ 
-    title, 
-    time, 
-    type, 
-    target, 
-    description: desc, 
-    coverUrl, 
-    createdAt: firebase.firestore.FieldValue.serverTimestamp() 
+  await db.collection('avisos').add({
+    dateStr: todayStr,
+    type,
+    title,
+    time,
+    desc,
+    coverUrl,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 
-  document.getElementById('avisoAdminForm').reset();
-  switchMainTab('avisos');
-  btn.innerText = "Publicar Aviso"; 
-  btn.disabled = false;
+  document.getElementById('formAdmin').reset();
+  hideLoad();
+  nav('Mural');
 }
+
+/* ====================================================
+   6. MENSAGENS E ÁUDIO COM FILTRO DE PALAVRÕES
+   ==================================================== */
+function filterText(txt) {
+  let f = txt;
+  badWords.forEach(w => {
+    f = f.replace(new RegExp(`\\b${w}\\b`, 'gi'), '######');
+  });
+  return f;
+}
+
+const chatInpElem = document.getElementById('chatInput');
+if (chatInpElem) {
+  chatInpElem.addEventListener('input', function() {
+    document.getElementById('btnMic').classList.toggle('hidden', this.value.trim().length > 0);
+    document.getElementById('btnSend').classList.toggle('hidden', this.value.trim().length === 0);
+  });
+}
+
+async function sendMsg(e) {
+  e.preventDefault();
+  const val = document.getElementById('chatInput').value.trim();
+  if (!val) return;
+
+  document.getElementById('chatInput').value = '';
+  document.getElementById('btnMic').classList.remove('hidden');
+  document.getElementById('btnSend').classList.add('hidden');
+
+  await db.collection('chat').add({
+    text: filterText(val),
+    audioUrl: null,
+    senderUid: userObj.uid,
+    senderName: userData.name,
+    senderPhoto: userData.photoURL,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+function renderMsg(m) {
+  const isMe = m.senderUid === userObj?.uid;
+  const d = document.createElement('div');
+  d.className = `flex gap-2 w-full ${isMe ? 'justify-end' : 'justify-start'}`;
+
+  const content = m.audioUrl 
+    ? `<div class="flex items-center gap-1.5"><i class="fa-solid fa-microphone text-emerald-500"></i><audio controls src="${m.audioUrl}" class="h-6 max-w-[150px]"></audio></div>` 
+    : `<p class="text-xs break-words">${m.text}</p>`;
+
+  d.innerHTML = `
+    ${!isMe ? `<img src="${m.senderPhoto}" class="w-6 h-6 rounded-full self-end shadow-sm">` : ''}
+    <div class="max-w-[80%] px-3 py-2 rounded-xl shadow-sm ${isMe ? 'bg-[#d9fdd3] text-slate-900 rounded-br-none' : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'}">
+      ${!isMe ? `<p class="text-[9px] font-black text-emerald-600 mb-0.5">${m.senderName}</p>` : ''}
+      ${content}
+    </div>
+  `;
+  return d;
+}
+
+/* Lógica de Gravação de Áudio */
+let mRec = null;
+let aCh = [];
+let isRec = false;
+let recIntr = null;
+let s = 0;
+
+async function toggleAudio() {
+  if (!isRec) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mRec = new MediaRecorder(stream);
+      aCh = [];
+      mRec.ondataavailable = e => { if (e.data.size > 0) aCh.push(e.data); };
+      mRec.start();
+      isRec = true;
+
+      document.getElementById('chatForm').classList.add('hidden');
+      document.getElementById('audioBar').classList.remove('hidden');
+      document.getElementById('audioBar').classList.add('flex');
+
+      s = 0;
+      recIntr = setInterval(() => {
+        s++;
+        document.getElementById('recTime').innerText = `00:${String(s).padStart(2, '0')}`;
+      }, 1000);
+    } catch (e) {
+      alert("Permissão para microfone não concedida.");
+    }
+  } else {
+    mRec.onstop = async () => {
+      const rd = new FileReader();
+      rd.readAsDataURL(new Blob(aCh, { type: 'audio/webm' }));
+      rd.onloadend = async () => {
+        await db.collection('chat').add({
+          text: null,
+          audioUrl: rd.result,
+          senderUid: userObj.uid,
+          senderName: userData.name,
+          senderPhoto: userData.photoURL,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      };
+      mRec.stream.getTracks().forEach(t => t.stop());
+    };
+    mRec.stop();
+    rstAudio();
+  }
+}
+
+function cancelAudio() {
+  if (mRec) {
+    mRec.stop();
+    mRec.stream.getTracks().forEach(t => t.stop());
+  }
+  rstAudio();
+}
+
+function rstAudio() {
+  isRec = false;
+  clearInterval(recIntr);
+  document.getElementById('audioBar').classList.add('hidden');
+  document.getElementById('audioBar').classList.remove('flex');
+  document.getElementById('chatForm').classList.remove('hidden');
+     }
