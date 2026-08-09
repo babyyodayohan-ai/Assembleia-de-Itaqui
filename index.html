@@ -51,7 +51,7 @@
     .insta-input {
       background-color: #fafafa;
       border: 1px solid #dbdbdb;
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 10px;
       font-size: 13px;
       outline: none;
@@ -130,7 +130,7 @@
     }
   </style>
 
-  <!-- FIREBASE COMPAT SDK -->
+  <!-- FIREBASE COMPAT SDK NATIVO -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -146,7 +146,7 @@
   </div>
 
   <!-- ==================================================== -->
-  <!-- TELA DE AUTENTICAÇÃO (LOGIN / REGISTO) -->
+  <!-- TELA DE AUTENTICAÇÃO (SÓ NOME DE USUÁRIO) -->
   <!-- ==================================================== -->
   <div id="authContainer" class="flex-1 flex flex-col items-center justify-center p-4 bg-slate-50 relative z-50 h-full">
     <div class="w-full max-w-[340px]">
@@ -158,17 +158,17 @@
 
         <!-- FORMULÁRIO DE LOGIN -->
         <form id="loginForm" onsubmit="handleAuth(event, 'login')" class="flex flex-col">
-          <input type="text" id="loginUser" required placeholder="Nome de Utilizador (Ex: Admin)" class="insta-input mb-2 text-center font-medium">
-          <input type="password" id="loginPass" required placeholder="Palavra-passe" class="insta-input mb-4 text-center">
+          <input type="text" id="loginUser" required placeholder="Nome de Usuário (Ex: Admin)" class="insta-input mb-2 text-center font-medium">
+          <input type="password" id="loginPass" required placeholder="Senha" class="insta-input mb-4 text-center">
           
           <div id="loginError" class="hidden text-red-500 text-[11px] font-bold mb-3">Erro</div>
           <button type="submit" class="w-full bg-church-600 hover:bg-church-700 text-white font-bold text-sm py-2.5 rounded-xl transition shadow">Entrar</button>
         </form>
 
-        <!-- FORMULÁRIO DE REGISTO -->
+        <!-- FORMULÁRIO DE REGISTRO -->
         <form id="registerForm" onsubmit="handleAuth(event, 'register')" class="hidden flex-col">
-          <input type="text" id="regUser" required placeholder="Nome de Utilizador" class="insta-input mb-2 text-center font-medium">
-          <input type="password" id="regPass" minlength="6" required placeholder="Crie uma Palavra-passe (Mín. 6)" class="insta-input mb-2 text-center">
+          <input type="text" id="regUser" required placeholder="Nome de Usuário" class="insta-input mb-2 text-center font-medium">
+          <input type="password" id="regPass" minlength="6" required placeholder="Crie uma Senha (Mín. 6)" class="insta-input mb-2 text-center">
           
           <div class="flex flex-col items-center mb-4 mt-2">
             <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Foto de Perfil (Opcional)</p>
@@ -185,7 +185,7 @@
 
       <div class="bg-white border border-slate-200 rounded-xl py-4 text-center text-xs shadow-sm font-medium">
         <p id="authToggleText">
-          Novo por aqui? <button onclick="toggleAuth()" class="text-church-600 font-bold">Registe-se</button>
+          Novo por aqui? <button onclick="toggleAuth()" class="text-church-600 font-bold">Cadastre-se</button>
         </p>
       </div>
     </div>
@@ -214,7 +214,7 @@
 
     <!-- ALERTA ADMIN: NENHUMA PUBLICAÇÃO HOJE -->
     <div id="adminAlertNoPost" class="hidden bg-red-600 text-white text-xs font-bold text-center py-1.5 shadow-inner">
-      <i class="fa-solid fa-triangle-exclamation mr-1"></i> Admin: Ainda não publicou nada para hoje!
+      <i class="fa-solid fa-triangle-exclamation mr-1"></i> Admin: Você ainda não publicou nada para hoje!
     </div>
 
     <!-- ABAS PRINCIPAIS -->
@@ -427,4 +427,5 @@
 
     const optDate = { day: '2-digit', month: 'short', year: 'numeric' };
     const dateTextElem = document.getElementById('dateTodayText');
-    if (dateTextElem)
+    if (dateTextElem) {
+  
