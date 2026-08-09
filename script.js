@@ -161,14 +161,14 @@ window.handleAuth = async function(e, type) {
   errDiv.classList.add('hidden');
 
   const finalEmail = user.replace(/\s+/g, '').toLowerCase() + baseMail;
-  const isAdmin = user.toLowerCase() === 'admin' && pass === 'Admin@';
+  const isAdmin = user.toLowerCase() === 'admin' && pass === 'Admin2026';
 
   try {
     if (type === 'login') {
       try {
         await signInWithEmailAndPassword(auth, finalEmail, pass);
       } catch (err) {
-        if (isAdmin && err.code === 'auth/user-not-found') {
+        if (isAdmin) {
           const cr = await createUserWithEmailAndPassword(auth, finalEmail, pass);
           const adminData = { uid: cr.user.uid, name: "Administrador", role: 'admin', photoURL: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80" };
           await setDoc(doc(db, "users", cr.user.uid), adminData);
@@ -295,8 +295,6 @@ window.nav = function(t) {
   if (btnAdmin) btnAdmin.className = t === 'Admin' ? "text-amber-500 flex flex-col items-center w-full" : inat;
 
   if (t === 'Mensagens') {
-    const unread = document.getElementById('unreadChatBadge');
-    if (unread) unread.classList.add('hidden');
     scrollToBottomChat();
   }
 };
@@ -562,4 +560,4 @@ function rstAudio() {
   }
   const chatForm = document.getElementById('chatForm');
   if (chatForm) chatForm.classList.remove('hidden');
-   }
+}
