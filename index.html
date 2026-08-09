@@ -3,238 +3,361 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Assembleia de Deus - Itaqui</title>
+  <title>Igreja Assembléia de Deus Itaqui</title>
 
-  <!-- Tailwind CSS CDN -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Ícones FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Fontes do Google -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
-  
-  <!-- CSS Personalizado -->
-  <link rel="stylesheet" href="style.css">
+  <!-- Fontes -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 
-  <!-- Firebase JS SDK (Compatível) -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            church: { 500: '#1d4ed8', 600: '#1e40af', 700: '#1e3a8a', 800: '#172554' }
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Montserrat', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body { background-color: #f8fafc; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    
+    /* INPUTS ESTILO INSTAGRAM */
+    .insta-input {
+      background-color: #fafafa; border: 1px solid #dbdbdb; border-radius: 4px;
+      padding: 10px; font-size: 13px; outline: none; transition: border-color 0.2s;
+    }
+    .insta-input:focus { border-color: #a8a8a8; background-color: #fff; }
+
+    /* CARROSSEL 3D */
+    .carousel-container {
+      perspective: 1000px;
+      display: flex; justify-content: center; align-items: center;
+      height: 400px; position: relative; overflow: hidden;
+      margin-top: 10px;
+    }
+    .card-3d {
+      position: absolute; width: 260px; height: 360px;
+      background: white; border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .card-left {
+      transform: translateX(-65%) translateZ(-150px) rotateY(20deg);
+      opacity: 0.6; z-index: 1; filter: blur(1px);
+    }
+    .card-center {
+      transform: translateX(0) translateZ(0) rotateY(0);
+      opacity: 1; z-index: 10; box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+    }
+    .card-right {
+      transform: translateX(65%) translateZ(-150px) rotateY(-20deg);
+      opacity: 0.6; z-index: 1; filter: blur(1px);
+    }
+
+    /* PING GRAVAÇÃO ÁUDIO */
+    .recording-pulse { animation: pulse-red 1.5s infinite; }
+    @keyframes pulse-red {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+  </style>
+
+  <!-- FIREBASE SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
-<body class="text-slate-800 font-sans min-h-screen flex flex-col antialiased bg-slate-50">
+<body class="text-slate-800 antialiased h-screen flex flex-col overflow-hidden">
 
-  <!-- ========================================== -->
-  <!-- TELA DE AUTENTICAÇÃO (ESTILO INSTAGRAM) -->
-  <!-- ========================================== -->
-  <div id="authContainer" class="flex-1 flex flex-col items-center justify-center p-4">
-    
-    <div class="w-full max-w-[350px]">
-      <!-- CAIXA PRINCIPAL (FORMULÁRIOS) -->
-      <div class="bg-white border border-slate-200 rounded-lg px-8 py-8 mb-3 flex flex-col items-center shadow-sm">
-        
-        <!-- Logotipo -->
-        <div class="mb-6 text-center">
-          <div class="inline-flex items-center justify-center w-14 h-14 bg-amber-50 rounded-full mb-2">
-            <i class="fa-solid fa-church text-3xl text-amber-500"></i>
-          </div>
-          <h1 class="font-display font-black text-2xl tracking-tighter text-slate-900">AD ITAQUI</h1>
-          <p class="text-xs text-slate-400 font-medium">Assembleia de Deus</p>
-        </div>
+  <!-- OVERLAY DE CARREGAMENTO GLOBAL -->
+  <div id="globalLoader" class="hidden fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center">
+    <div class="bg-white p-5 rounded-2xl flex flex-col items-center shadow-2xl">
+      <div class="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+      <p class="text-sm font-bold text-slate-700">Carregando...</p>
+    </div>
+  </div>
 
-        <!-- FORMULÁRIO DE LOGIN -->
-        <form id="loginForm" onsubmit="handleLogin(event)" class="w-full flex flex-col">
-          <input type="text" id="loginUser" required placeholder="Usuário (Ex: Admin2026) ou E-mail" class="insta-input mb-2 w-full">
-          <input type="password" id="loginPass" required placeholder="Senha" class="insta-input mb-4 w-full">
+  <!-- ==================================================== -->
+  <!-- TELA DE AUTENTICAÇÃO (SÓ USUÁRIO) -->
+  <!-- ==================================================== -->
+  <div id="authContainer" class="flex-1 flex flex-col items-center justify-center p-4 bg-slate-50 relative z-50 h-full">
+    <div class="w-full max-w-[340px]">
+      
+      <div class="bg-white border border-slate-200 rounded-xl px-8 py-8 mb-4 shadow-sm text-center">
+        <i class="fa-solid fa-church text-4xl text-church-600 mb-2"></i>
+        <h1 class="font-display font-black text-xl text-slate-900 leading-tight">IGREJA ASSEMBLÉIA<br>DE DEUS ITAQUI</h1>
+        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-6 mt-1">Conecte-se para entrar</p>
+
+        <!-- FORMULÁRIO LOGIN -->
+        <form id="loginForm" onsubmit="handleAuth(event, 'login')" class="flex flex-col">
+          <input type="text" id="loginUser" required placeholder="Nome de Usuário (Ex: Admin)" class="insta-input mb-2 text-center font-medium">
+          <input type="password" id="loginPass" required placeholder="Senha" class="insta-input mb-4 text-center">
           
-          <div id="loginError" class="hidden text-red-500 text-xs text-center mb-3 font-medium">Erro ao entrar</div>
-          
-          <button type="submit" id="btnLogin" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold text-sm py-2 rounded transition shadow-sm">
-            Entrar
-          </button>
-
-          <div class="flex items-center my-4 w-full">
-            <div class="flex-1 h-px bg-slate-200"></div>
-            <span class="px-3 text-[11px] text-slate-400 font-bold uppercase">Ou</span>
-            <div class="flex-1 h-px bg-slate-200"></div>
-          </div>
+          <div id="loginError" class="hidden text-red-500 text-[11px] font-bold mb-3">Erro</div>
+          <button type="submit" class="w-full bg-church-600 hover:bg-church-700 text-white font-bold text-sm py-2.5 rounded transition shadow">Entrar</button>
         </form>
 
-        <!-- FORMULÁRIO DE REGISTRO (Oculto por padrão) -->
-        <form id="registerForm" onsubmit="handleRegister(event)" class="w-full hidden flex-col">
-          <h2 class="text-slate-500 text-[13px] font-semibold text-center mb-4 leading-tight">Cadastre-se para acompanhar os avisos e participar do chat.</h2>
+        <!-- FORMULÁRIO REGISTRO -->
+        <form id="registerForm" onsubmit="handleAuth(event, 'register')" class="hidden flex-col">
+          <input type="text" id="regUser" required placeholder="Crie um Nome de Usuário" class="insta-input mb-2 text-center font-medium">
+          <input type="password" id="regPass" minlength="6" required placeholder="Crie uma Senha (Mín. 6)" class="insta-input mb-2 text-center">
           
-          <input type="email" id="regEmail" required placeholder="E-mail" class="insta-input mb-2 w-full">
-          <input type="text" id="regName" required placeholder="Nome Completo" class="insta-input mb-2 w-full">
-          <input type="password" id="regPass" minlength="6" required placeholder="Senha (Mínimo 6 caracteres)" class="insta-input mb-4 w-full">
-          
-          <div class="flex flex-col items-center mb-4">
-            <p class="text-xs text-slate-500 mb-2 font-medium">Foto de Perfil (Opcional)</p>
-            <div class="relative cursor-pointer group" onclick="document.getElementById('regPhotoInput').click()">
-              <img id="regPhotoPreview" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80" class="w-14 h-14 rounded-full object-cover border border-slate-300">
-              <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                <i class="fa-solid fa-camera text-white text-xs"></i>
-              </div>
+          <div class="flex flex-col items-center mb-4 mt-2">
+            <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Foto (Opcional)</p>
+            <div class="relative cursor-pointer" onclick="document.getElementById('regPhoto').click()">
+              <img id="regPhotoPreview" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80" class="w-12 h-12 rounded-full object-cover border border-slate-300">
             </div>
-            <input type="file" id="regPhotoInput" accept="image/*" onchange="previewProfilePhoto(this)" class="hidden">
+            <input type="file" id="regPhoto" accept="image/*" onchange="previewPhoto(this)" class="hidden">
           </div>
 
-          <div id="regError" class="hidden text-red-500 text-xs text-center mb-3 font-medium">Erro ao cadastrar</div>
-          
-          <button type="submit" id="btnRegister" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold text-sm py-2 rounded transition shadow-sm">
-            Cadastre-se
-          </button>
+          <div id="regError" class="hidden text-red-500 text-[11px] font-bold mb-3">Erro</div>
+          <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-2.5 rounded transition shadow">Criar Conta</button>
         </form>
       </div>
 
-      <!-- CAIXA SECUNDÁRIA (TROCAR ENTRE LOGIN E REGISTRO) -->
-      <div class="bg-white border border-slate-200 rounded-lg py-4 text-center text-sm shadow-sm">
-        <p id="switchText" class="text-slate-700">
-          Não tem uma conta? <button type="button" onclick="toggleAuthMode()" class="text-blue-500 font-bold outline-none">Cadastre-se</button>
+      <div class="bg-white border border-slate-200 rounded-xl py-4 text-center text-xs shadow-sm font-medium">
+        <p id="authToggleText">
+          Novo por aqui? <button onclick="toggleAuth()" class="text-church-600 font-bold">Cadastre-se</button>
         </p>
       </div>
     </div>
-
   </div>
 
-  <!-- ========================================== -->
-  <!-- APLICATIVO PRINCIPAL (PAINEL LOGADO) -->
-  <!-- ========================================== -->
-  <div id="mainApp" class="hidden flex-1 flex-col max-w-2xl mx-auto w-full bg-white shadow-xl h-screen relative pb-16 border-x border-slate-200">
-
-    <!-- CABEÇALHO SUPERIOR -->
-    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
-      <div class="px-4 py-3 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-full bg-amber-400/20 border border-amber-300/40 flex items-center justify-center">
-            <i class="fa-solid fa-church text-amber-400 text-sm"></i>
-          </div>
-          <div>
-            <h1 class="font-display font-bold text-base leading-none tracking-tight">AD ITAQUI</h1>
-            <p class="text-[10px] text-amber-400 font-medium">Assembleia de Deus</p>
-          </div>
+  <!-- ==================================================== -->
+  <!-- APLICATIVO PRINCIPAL -->
+  <!-- ==================================================== -->
+  <div id="mainApp" class="hidden flex-1 flex-col max-w-md mx-auto w-full bg-white shadow-2xl relative h-full border-x border-slate-200">
+    
+    <!-- HEADER -->
+    <header class="bg-gradient-to-r from-slate-900 to-church-900 text-white px-4 py-3 flex items-center justify-between shadow z-30">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-church text-amber-400"></i>
+        <h1 class="font-display font-black text-sm tracking-tight leading-none">AD ITAQUI</h1>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="bg-white/10 px-2 py-1 rounded-full flex items-center gap-1.5 border border-white/5">
+          <img id="navPic" src="" class="w-5 h-5 rounded-full object-cover">
+          <span id="navName" class="text-[10px] font-bold max-w-[60px] truncate">...</span>
+          <span id="navAdminBadge" class="hidden bg-amber-500 text-slate-900 text-[8px] font-black px-1 rounded uppercase">Admin</span>
         </div>
-
-        <!-- Perfil do Usuário e Sair -->
-        <div class="flex items-center gap-2">
-          <div class="flex items-center gap-2 bg-white/10 px-2.5 py-1 rounded-full border border-white/10">
-            <img id="navUserProfilePic" src="" class="w-5 h-5 rounded-full object-cover">
-            <span id="navUserName" class="text-[11px] font-semibold max-w-[80px] truncate">...</span>
-            <span id="navAdminBadge" class="hidden bg-amber-500 text-slate-950 font-bold text-[8px] px-1 rounded uppercase">Admin</span>
-          </div>
-          <button onclick="handleLogout()" title="Sair da Conta" class="text-red-400 hover:text-red-300 p-1">
-            <i class="fa-solid fa-power-off text-sm"></i>
-          </button>
-        </div>
+        <button onclick="handleLogout()" class="text-red-400 p-1"><i class="fa-solid fa-power-off text-sm"></i></button>
       </div>
     </header>
 
-    <!-- ÁREA DAS ABAS -->
-    <main class="flex-1 flex flex-col relative overflow-hidden bg-slate-50">
+    <!-- AVISO ADMIN: NADA HOJE -->
+    <div id="adminAlertNoPost" class="hidden bg-red-600 text-white text-xs font-bold text-center py-1.5 shadow-inner">
+      <i class="fa-solid fa-triangle-exclamation mr-1"></i> Admin: Você ainda não publicou nada para hoje!
+    </div>
 
-      <!-- ABA 1: MURAL DE AVISOS -->
-      <section id="secAvisos" class="flex-1 p-4 space-y-4 overflow-y-auto">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-          <h2 class="font-bold text-slate-800"><i class="fa-solid fa-scroll text-blue-600 mr-1"></i> Mural de Avisos</h2>
-        </div>
+    <!-- ABAS -->
+    <main class="flex-1 relative overflow-hidden bg-[#f8fafc]">
+      
+      <!-- ABA 1: MURAL 3D -->
+      <section id="secMural" class="absolute inset-0 flex flex-col pt-2">
+        <h2 class="text-center font-display font-black text-slate-800 text-lg">Mural da Igreja</h2>
         
-        <div id="avisosFeed" class="space-y-4 pb-4"></div>
-
-        <div id="emptyAvisos" class="hidden text-center py-10 px-4">
-          <i class="fa-solid fa-calendar-xmark text-4xl text-slate-300 mb-2"></i>
-          <p class="text-slate-500 text-sm">Nenhum aviso publicado no momento.</p>
-        </div>
-      </section>
-
-      <!-- ABA 2: MENSAGENS / CHAT DE GRUPO -->
-      <section id="secMensagens" class="hidden flex-1 flex flex-col h-full bg-[#efeae2]">
-        <div class="bg-white/90 px-3 py-2 border-b border-slate-200 flex items-center gap-2 text-xs text-slate-600 shadow-sm z-10 backdrop-blur-sm">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span class="font-bold text-slate-800">Grupo Geral da Igreja</span>
-        </div>
-
-        <div id="chatFeed" class="flex-1 p-3 overflow-y-auto space-y-3"></div>
-
-        <!-- Barra de Entrada de Mensagem e Microfone -->
-        <div class="bg-slate-100 p-2 flex flex-col gap-2 z-10">
-          <div id="audioRecordingBar" class="hidden bg-red-100 rounded-full px-3 py-1.5 flex items-center justify-between text-xs text-red-700 font-bold border border-red-200">
-            <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 bg-red-600 rounded-full recording-pulse"></span>
-              Gravando voz... <span id="recordingTimer" class="font-mono">00:00</span>
+        <div class="carousel-container" id="carouselContainer">
+          <!-- CARD ONTEM -->
+          <div class="card-3d card-left" id="cardYesterday">
+            <div class="bg-slate-800 text-white text-center py-1.5 text-[10px] font-bold uppercase tracking-widest">Ontem</div>
+            <div id="contentYesterday" class="flex-1 flex flex-col items-center justify-center p-4 text-center">
+              <i class="fa-solid fa-clock-rotate-left text-3xl text-slate-300 mb-2"></i>
+              <p class="text-xs text-slate-400 font-medium">Sem publicações.</p>
             </div>
-            <button onclick="cancelAudioRecording()" class="text-red-500"><i class="fa-solid fa-trash-can"></i></button>
           </div>
 
-          <form id="chatForm" onsubmit="sendTextMessage(event)" class="flex items-center gap-1.5">
-            <input type="text" id="chatInput" placeholder="Mensagem..." autocomplete="off" class="flex-1 py-2 px-4 bg-white border border-slate-300 rounded-full text-sm outline-none focus:border-blue-500 shadow-sm">
-            
-            <button type="button" id="micBtn" onclick="toggleAudioRecording()" class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md">
-              <i id="micIcon" class="fa-solid fa-microphone text-sm"></i>
-            </button>
-            <button type="submit" id="sendBtn" class="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md hidden">
-              <i class="fa-solid fa-paper-plane text-sm ml-[-2px]"></i>
-            </button>
+          <!-- CARD HOJE (CENTRO) -->
+          <div class="card-3d card-center border-2 border-amber-400 relative" id="cardToday">
+            <div class="bg-amber-400 text-slate-900 text-center py-1.5 text-[11px] font-black uppercase tracking-widest" id="dateTodayText">Hoje</div>
+            <div id="contentToday" class="flex-1 flex flex-col items-center justify-center p-4 text-center">
+              <div class="animate-pulse flex flex-col items-center">
+                <div class="w-10 h-10 border-4 border-slate-300 border-t-amber-500 rounded-full animate-spin mb-2"></div>
+                <p class="text-[10px] font-bold text-slate-400">Buscando...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD AMANHÃ (CADEADO) -->
+          <div class="card-3d card-right" id="cardTomorrow">
+            <div class="bg-slate-300 text-slate-600 text-center py-1.5 text-[10px] font-bold uppercase tracking-widest">Amanhã</div>
+            <div class="flex-1 flex flex-col items-center justify-center bg-slate-100/50">
+              <div class="w-12 h-12 bg-slate-200 rounded-full flex items-center justify-center mb-2 shadow-inner">
+                <i class="fa-solid fa-lock text-slate-400 text-xl"></i>
+              </div>
+              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Aguarde o dia<br>de amanhã</p>
+            </div>
+          </div>
+        </div>
+        
+        <p class="text-center text-[10px] text-slate-400 font-medium mt-auto mb-4">Postagens antigas são apagadas para manter o site rápido.</p>
+      </section>
+
+      <!-- ABA 2: MENSAGENS -->
+      <section id="secMensagens" class="hidden absolute inset-0 flex-col bg-[#efeae2]">
+        <div class="bg-white/95 backdrop-blur px-3 py-2 border-b border-slate-200 flex items-center justify-between shadow-sm z-10">
+          <div class="flex items-center gap-2 text-slate-800">
+            <div class="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center border border-emerald-200">
+              <i class="fa-solid fa-users text-emerald-600 text-[10px]"></i>
+            </div>
+            <div>
+              <h2 class="font-bold text-xs leading-none">Mocidade filhos da promessa Itaqui</h2>
+              <p class="text-[9px] text-slate-500">Chat Geral da Igreja</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="chatFeed" class="flex-1 p-3 overflow-y-auto space-y-2.5 pb-20"></div>
+
+        <div class="absolute bottom-0 left-0 right-0 bg-slate-100 p-2 border-t border-slate-200 z-10">
+          
+          <div id="audioBar" class="hidden bg-red-100 rounded-full px-3 py-1.5 mb-2 flex items-center justify-between text-xs text-red-700 font-bold border border-red-200">
+            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-red-600 rounded-full recording-pulse"></span>Gravando... <span id="recTime">00:00</span></div>
+            <button onclick="cancelAudio()" class="text-red-500"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+
+          <form id="chatForm" onsubmit="sendMsg(event)" class="flex items-center gap-1.5">
+            <input type="text" id="chatInput" placeholder="Mensagem..." class="flex-1 py-2 px-3 bg-white border border-slate-300 rounded-full text-sm outline-none focus:border-church-500 shadow-sm" autocomplete="off">
+            <button type="button" id="btnMic" onclick="toggleAudio()" class="w-10 h-10 rounded-full bg-church-600 text-white flex items-center justify-center shadow"><i id="iconMic" class="fa-solid fa-microphone text-sm"></i></button>
+            <button type="submit" id="btnSend" class="hidden w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow"><i class="fa-solid fa-paper-plane text-sm ml-[-2px]"></i></button>
           </form>
         </div>
       </section>
 
-      <!-- ABA 3: PAINEL ADMINISTRADOR -->
-      <section id="secAdmin" class="hidden flex-1 p-4 overflow-y-auto space-y-4">
-        <div class="bg-slate-900 text-amber-400 p-4 rounded-xl shadow flex items-center gap-3">
-          <i class="fa-solid fa-shield-halved text-2xl"></i>
+      <!-- ABA 3: ADMIN -->
+      <section id="secAdmin" class="hidden absolute inset-0 flex-col p-4 overflow-y-auto bg-white">
+        <h2 class="font-display font-black text-lg text-slate-800 mb-4 border-b border-slate-200 pb-2"><i class="fa-solid fa-shield-halved text-amber-500 mr-1"></i> Publicar para Hoje</h2>
+        
+        <form id="formAdmin" onsubmit="publishToday(event)" class="space-y-3">
+          <input type="text" id="pubTitle" required placeholder="Título (Ex: Culto de Celebração)" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm outline-none font-bold">
+          
+          <div class="flex gap-2">
+            <select id="pubType" required class="w-1/2 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm outline-none font-medium text-slate-700">
+              <option value="Culto">Culto</option>
+              <option value="Ensaio Jovem">Ensaio Jovem</option>
+              <option value="Ensaio Infantil">Ensaio Infantil</option>
+              <option value="Ensaio dos Mais Velhos">Ensaio dos Mais Velhos</option>
+            </select>
+            <input type="text" id="pubTime" required placeholder="Horário (Ex: 19:30)" class="w-1/2 p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm outline-none">
+          </div>
+          
           <div>
-            <h2 class="font-bold">Painel do Administrador</h2>
-            <p class="text-[10px] text-slate-300">Publicar novos comunicados para a igreja</p>
-          </div>
-        </div>
-
-        <form id="avisoAdminForm" onsubmit="publishAviso(event)" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-          <input type="text" id="avisoTitle" required placeholder="Título do Aviso *" class="w-full p-2 border border-slate-300 rounded text-sm outline-none">
-          
-          <div class="flex gap-2">
-            <input type="text" id="avisoTime" required placeholder="Horário (Ex: Hoje às 19h) *" class="w-1/2 p-2 border border-slate-300 rounded text-sm outline-none">
-            <select id="avisoType" required class="w-1/2 p-2 border border-slate-300 rounded text-sm outline-none bg-white">
-              <option value="CULTO">Culto</option>
-              <option value="ENSAIO">Ensaio</option>
-              <option value="EVENTO">Evento</option>
-            </select>
+            <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Capa da Publicação (Opcional)</p>
+            <input type="file" id="pubCover" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-amber-100 file:text-amber-800 file:font-bold">
           </div>
           
-          <div class="flex gap-2">
-            <select id="avisoTarget" required class="w-1/2 p-2 border border-slate-300 rounded text-sm outline-none bg-white">
-              <option value="GERAL">Igreja Toda</option>
-              <option value="JOVEM">Mocidade / Jovens</option>
-              <option value="INFANTIL">Crianças / Infantil</option>
-            </select>
-            <input type="file" id="avisoCoverFile" accept="image/*" class="w-1/2 text-[10px] file:mr-1 file:py-1 file:px-2 file:rounded file:border-0 file:bg-amber-100 file:text-amber-800">
-          </div>
+          <textarea id="pubDesc" rows="3" placeholder="Informações extras..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm outline-none"></textarea>
           
-          <textarea id="avisoDescription" rows="2" placeholder="Detalhes adicionais (Opcional)" class="w-full p-2 border border-slate-300 rounded text-sm outline-none"></textarea>
-          
-          <button type="submit" id="btnPublishAviso" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold rounded shadow transition">
-            Publicar Aviso
-          </button>
+          <button type="submit" class="w-full py-3 bg-amber-500 text-slate-900 font-black rounded-lg shadow-md uppercase tracking-wider mt-2">Publicar no Mural</button>
         </form>
       </section>
 
     </main>
 
-    <!-- BARRA DE NAVEGAÇÃO INFERIOR -->
-    <nav class="absolute bottom-0 left-0 right-0 h-14 bg-white border-t border-slate-200 z-40 flex justify-around items-center">
-      <button id="navBtnAvisos" onclick="switchMainTab('avisos')" class="flex flex-col items-center text-blue-600 w-full">
-        <i class="fa-solid fa-scroll text-lg"></i>
+    <!-- NAVEGAÇÃO INFERIOR -->
+    <nav class="bg-white border-t border-slate-200 h-14 flex justify-around items-center z-40 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+      <button onclick="nav('Mural')" id="navBtnMural" class="text-church-600 flex flex-col items-center w-full"><i class="fa-solid fa-layer-group text-xl"></i></button>
+      <button onclick="nav('Mensagens')" id="navBtnMensagens" class="text-slate-400 hover:text-church-600 flex flex-col items-center w-full relative">
+        <i class="fa-solid fa-comment-dots text-xl"></i>
       </button>
-      <button id="navBtnMensagens" onclick="switchMainTab('mensagens')" class="flex flex-col items-center text-slate-400 hover:text-blue-600 w-full relative">
-        <i class="fa-solid fa-comments text-xl"></i>
-        <span id="unreadChatBadge" class="hidden absolute top-[-2px] right-[38%] w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>
-      </button>
-      <button id="navBtnAdmin" onclick="switchMainTab('admin')" class="hidden flex-col items-center text-slate-400 hover:text-amber-600 w-full">
-        <i class="fa-solid fa-gear text-lg"></i>
-      </button>
+      <button onclick="nav('Admin')" id="navBtnAdmin" class="hidden text-slate-400 hover:text-amber-500 flex flex-col items-center w-full"><i class="fa-solid fa-gear text-xl"></i></button>
     </nav>
   </div>
 
-  <!-- Carregamento da Lógica do Aplicativo -->
-  <script src="script.js"></script>
-</body>
-</html>
+  <script>
+    /* ====================================================
+       CONFIGURAÇÃO FIREBASE E VARIÁVEIS
+       ==================================================== */
+    const firebaseConfig = {
+      apiKey: "AIzaSyCTDM1w_Bl2uJhcsVQXyUivAR4vQWq1DZ4",
+      authDomain: "igrejadeitaqui.firebaseapp.com",
+      projectId: "igrejadeitaqui",
+      storageBucket: "igrejadeitaqui.firebasestorage.app",
+      messagingSenderId: "694873463575",
+      appId: "1:694873463575:web:09518c36cfab2ac318b552",
+      measurementId: "G-JRRF2W6GW3"
+    };
 
-          
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+
+    let userObj = null, userData = null;
+    let baseMail = "@aditaqui.app"; // Email falso estrutural
+    
+    // Palavrões
+    const badWords = ['merda', 'porra', 'caralho', 'puta', 'fdp', 'bosta', 'cacete', 'cuzão', 'cuzao', 'desgraça'];
+
+    /* ====================================================
+       FUNÇÕES UTILITÁRIAS
+       ==================================================== */
+    function showLoad() { document.getElementById('globalLoader').classList.remove('hidden'); }
+    function hideLoad() { setTimeout(() => document.getElementById('globalLoader').classList.add('hidden'), 500); }
+    
+    function formatDateStr(dateObj) {
+      return dateObj.toISOString().split('T')[0]; // "YYYY-MM-DD"
+    }
+    
+    const todayObj = new Date();
+    const todayStr = formatDateStr(todayObj);
+    const yesterdayObj = new Date(todayObj); yesterdayObj.setDate(yesterdayObj.getDate() - 1);
+    const yesterdayStr = formatDateStr(yesterdayObj);
+    
+    // Mostra data no cabeçalho central
+    const optDate = { day: '2-digit', month: 'short', year: 'numeric' };
+    document.getElementById('dateTodayText').innerText = `Hoje • ${todayObj.toLocaleDateString('pt-BR', optDate)}`;
+
+    /* ====================================================
+       AUTENTICAÇÃO (SÓ NOME DE USUÁRIO)
+       ==================================================== */
+    let isLogin = true;
+    function toggleAuth() {
+      isLogin = !isLogin;
+      document.getElementById('loginForm').classList.toggle('hidden', !isLogin);
+      document.getElementById('loginForm').classList.toggle('flex', isLogin);
+      document.getElementById('registerForm').classList.toggle('hidden', isLogin);
+      document.getElementById('registerForm').classList.toggle('flex', !isLogin);
+      document.getElementById('authToggleText').innerHTML = isLogin ? 'Novo por aqui? <button onclick="toggleAuth()" class="text-church-600 font-bold">Cadastre-se</button>' : 'Já tem conta? <button onclick="toggleAuth()" class="text-church-600 font-bold">Entrar</button>';
+    }
+
+    let pFoto = null;
+    function previewPhoto(input) {
+      if(input.files && input.files[0]) {
+        const r = new FileReader(); r.onload = e => { document.getElementById('regPhotoPreview').src = e.target.result; pFoto = e.target.result; };
+        r.readAsDataURL(input.files[0]);
+      }
+    }
+
+    async function handleAuth(e, type) {
+      e.preventDefault(); showLoad();
+      
+      let user = type === 'login' ? document.getElementById('loginUser').value.trim() : document.getElementById('regUser').value.trim();
+      let pass = type === 'login' ? document.getElementById('loginPass').value : document.getElementById('regPass').value;
+      let errDiv = document.getElementById(type === 'login' ? 'loginError' : 'regError');
+      errDiv.classList.add('hidden');
+
+      // Proteção de nome
+      let finalEmail = user.replace(/\s+/g, '').toLowerCase() + baseMail;
+      const isAdmin = user.toLowerCase() === 'admin' && pass === 'Admin@';
+
+      try {
+        if(type === 'login') {
+          try {
+            await auth.signInWithEmailAndPassword(finalEmail, pass);
+          } catch(err) {
+            // Se Admin não existe, auto-cria
+            if(isAdmin && err.code === 'auth/user-not-found') {
+              const cr = await auth.createUserWithEmailAndPassword(finalEmail, pass);
+              await cr.user.updateProfile({ displayName: "Administrador" });
+            } else { t
